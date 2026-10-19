@@ -1,0 +1,8 @@
+{
+  "name": "GC58 FORMATIONS",
+  "description": "منصة التكوين الاحترافي في الهندسة المدنية: الخرسانة المسلحة، الشاربونت ميتاليك وحساب الطرقات (Robot, ETABS, Tekla, IDEA StatiCa, Covadis, Piste).",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-ar: 'Cairo', sans-serif;
+    --font-latin: 'Plus Jakarta Sans', sans-serif;
+  }
+  
+  html[dir="rtl"] {
+    font-family: 'Cairo', system-ui, sans-serif;
+  }
+  
+  html[dir="ltr"] {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+/* Prevent numbers and phone numbers from inverting or flipping in Arabic RTL */
+.ltr-text, 
+[dir="ltr"],
+.num-ltr,
+bdi,
+.font-mono {
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+  text-align: left;
+}
+
+.inline-ltr {
+  display: inline-block;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}
+
+/* Ensure currency badges like '3 000 دج' keep numbers in natural LTR order */
+.price-display {
+  direction: ltr;
+  unicode-bidi: isolate;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+/* Custom subtle scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #090d16;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
