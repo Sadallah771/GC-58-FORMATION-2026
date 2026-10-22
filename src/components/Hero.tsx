@@ -8,7 +8,8 @@ import {
   MessageSquare, 
   ArrowRight, 
   CheckCircle2, 
-  Sparkles 
+  Sparkles,
+  Bot
 } from 'lucide-react';
 import { Language } from '../types';
 
@@ -16,6 +17,7 @@ interface HeroProps {
   language: Language;
   onExploreCourses: () => void;
   onOpenFastEnroll: () => void;
+  onOpenAIAssistant?: () => void;
   sitePhone: string;
 }
 
@@ -23,6 +25,7 @@ export const Hero: React.FC<HeroProps> = ({
   language,
   onExploreCourses,
   onOpenFastEnroll,
+  onOpenAIAssistant,
   sitePhone,
 }) => {
   const isAr = language === 'ar';
@@ -147,36 +150,38 @@ export const Hero: React.FC<HeroProps> = ({
             </div>
           </div>
 
-          {/* Action CTAs: Registration + WhatsApp + Direct Phone */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
+          {/* Action CTAs: Direct Registration + AI Consultant + WhatsApp */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <button
               onClick={onOpenFastEnroll}
-              className="w-full sm:w-auto px-7 py-4 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <PhoneCall className="w-5 h-5 text-slate-950" />
-              <span>{isAr ? 'طلب تسجيل أولي (بالإيميل واختيار الدورات)' : 'Pré-inscription par email'}</span>
+              <PhoneCall className="w-4 h-4 text-slate-950" />
+              <span>{isAr ? 'طلب الدورة والتسجيل المباشر' : 'Commander une formation'}</span>
             </button>
+
+            {onOpenAIAssistant && (
+              <button
+                onClick={onOpenAIAssistant}
+                className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold text-xs sm:text-sm border border-amber-500/40 shadow-lg shadow-amber-500/10 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Bot className="w-4 h-4 text-amber-400 animate-bounce" />
+                <span>{isAr ? '✨ استشر GC58 AI' : '✨ GC58 AI'}</span>
+              </button>
+            )}
 
             <a
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="w-full sm:w-auto px-6 py-4 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold text-sm sm:text-base shadow-xl shadow-[#25D366]/25 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-[#25D366]/25 hover:scale-[1.02] transition-all flex items-center justify-center gap-2"
             >
-              <MessageSquare className="w-5 h-5 fill-white" />
+              <MessageSquare className="w-4 h-4 fill-white" />
               <span>
-                {isAr ? 'أكمل الطلب عبر الواتساب: ' : 'Finaliser sur WhatsApp : '}
+                {isAr ? 'واتساب الإدارة: ' : 'WhatsApp : '}
                 <span dir="ltr" className="font-mono inline-block font-black">{sitePhone}</span>
               </span>
             </a>
-
-            <button
-              onClick={onExploreCourses}
-              className="w-full sm:w-auto px-5 py-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-sm border border-slate-800 transition-all flex items-center justify-center gap-2"
-            >
-              <span>{isAr ? 'تصفح الـ 13 دورة' : 'Voir les 13 formations'}</span>
-              <ArrowRight className="w-4 h-4 text-amber-400" />
-            </button>
           </div>
 
           {/* Trust Guarantees */}
@@ -185,7 +190,7 @@ export const Hero: React.FC<HeroProps> = ({
               <CheckCircle2 className="w-5 h-5 text-amber-400 shrink-0" />
               <div>
                 <p className="text-xs font-bold text-white">{isAr ? 'مشاريع حقيقية CTC' : 'Conforme CTC'}</p>
-                <p className="text-[11px] text-slate-400">{isAr ? 'معايير RPA99 و Eurocodes' : 'RPA 99 & CCM 97'}</p>
+                <p className="text-[11px] text-slate-400">{isAr ? 'معايير RPA 2024 و Eurocodes' : 'RPA 2024 & CCM 97'}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">

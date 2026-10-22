@@ -58,6 +58,10 @@ export interface Registration {
   status: RegistrationStatus;
   notes?: string;
   userId?: string;
+  receiptUrl?: string; // Base64 or image URL of BaridiMob / CCP transfer receipt
+  receiptFileName?: string;
+  paymentMethod?: 'baridimob' | 'ccp' | 'espece' | 'autre';
+  voucherCode?: string;
   createdAt: string;
   updatedAt?: string;
 }
