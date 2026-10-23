@@ -58,10 +58,6 @@ export interface Registration {
   status: RegistrationStatus;
   notes?: string;
   userId?: string;
-  receiptUrl?: string; // Base64 or image URL of BaridiMob / CCP transfer receipt
-  receiptFileName?: string;
-  paymentMethod?: 'baridimob' | 'ccp' | 'espece' | 'autre';
-  voucherCode?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -87,7 +83,5 @@ export interface StudentProgress {
   completedModules: string[];
   lastUpdated: string;
 }
-
-
 
 export type Language = 'ar' | 'fr';

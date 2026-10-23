@@ -8,7 +8,6 @@ import { EnrollmentModal } from './components/EnrollmentModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ReviewsSection } from './components/ReviewsSection';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
-import { AddReviewModal } from './components/AddReviewModal';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
 import { Course, Language } from './types';
@@ -31,7 +30,6 @@ function AppContent() {
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [enrollPreselectedIds, setEnrollPreselectedIds] = useState<string[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Sync HTML dir with selected language
   useEffect(() => {
@@ -138,7 +136,7 @@ function AppContent() {
 
             <ReviewsSection
               language={language}
-              onOpenEvaluateModal={() => setIsReviewModalOpen(true)}
+              onOpenEvaluateModal={handleOpenCartOrEnroll}
             />
           </>
         )}
@@ -184,13 +182,6 @@ function AppContent() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         language={language}
-      />
-
-      <AddReviewModal
-        isOpen={isReviewModalOpen}
-        onClose={() => setIsReviewModalOpen(false)}
-        language={language}
-        courses={courses}
       />
     </div>
   );

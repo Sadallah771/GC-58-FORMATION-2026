@@ -35,11 +35,6 @@ service cloud.firestore {
       allow create, update, delete: if true;
     }
 
-    // AI Leads & Client CRM Interactions captured by GC58 AI
-    match /ai_leads/{leadId} {
-      allow read, write: if true;
-    }
-
     // Default deny
     match /{document=**} {
       allow read, write: if false;

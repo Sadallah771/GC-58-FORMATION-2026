@@ -50,26 +50,6 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userName", "courseId", "rating", "comment", "createdAt"]
-    },
-    "AILead": {
-      "title": "AILead",
-      "description": "Client interaction, background, interests, and chat history recorded by GC58 AI",
-      "type": "object",
-      "properties": {
-        "userId": { "type": "string", "maxLength": 128 },
-        "userName": { "type": "string", "maxLength": 100 },
-        "userEmail": { "type": "string", "maxLength": 120 },
-        "phone": { "type": "string", "maxLength": 30 },
-        "wilaya": { "type": "string", "maxLength": 50 },
-        "statusEducation": { "type": "string", "maxLength": 100 },
-        "interests": { "type": "array" },
-        "summary": { "type": "string", "maxLength": 1000 },
-        "lastMessage": { "type": "string", "maxLength": 1000 },
-        "messagesCount": { "type": "number" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userName", "updatedAt"]
     }
   },
   "firestore": {
@@ -84,10 +64,6 @@
     "/reviews/{reviewId}": {
       "schema": { "$ref": "#/entities/Review" },
       "description": "Course reviews and student ratings"
-    },
-    "/ai_leads/{leadId}": {
-      "schema": { "$ref": "#/entities/AILead" },
-      "description": "Client interactions and CRM leads captured by GC58 AI"
     }
   }
 }

@@ -15,14 +15,14 @@ export const COURSES_DATA: Course[] = [
     badge: 'بروموسيون 50 ساعة - 3000 دج',
     thumbnail: 'https://plus.unsplash.com/premium_photo-1676625176020-3bbb1c0adea1?q=80&w=387&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D',
     shortDesc: {
-      fr: 'Conception, modélisation 3D, calcul sismique RPA 2024 et ferraillage complet d’une villa ou bâtiment d’habitation R+2.',
-      ar: 'تصميم ونمذجة ثلاثية الأبعاد، الحساب الزلزالي وفق RPA 2024 وتسليح كامل لبناية سكنية أو فيلا R+2.'
+      fr: 'Conception, modélisation 3D, calcul sismique RPA 99 v2003 et ferraillage complet d’une villa ou bâtiment d’habitation R+2.',
+      ar: 'تصميم ونمذجة ثلاثية الأبعاد، الحساب الزلزالي وفق RPA 99 v2003 وتسليح كامل لبناية سكنية أو فيلا R+2.'
     },
     fullDesc: {
-      fr: 'Une formation 100% pratique sur Autodesk Robot dédiée aux ingénieurs et techniciens. Vous apprendrez pas à pas à concevoir un bâtiment en béton armé R+2 : modélisation de la structure poteaux-poutres et dalles, application des charges permanentes (G) et d’exploitation (Q), génération du spectre sismique selon le RPA 2024, vérification de la rigidité, déplacements inter-étages et dimensionnement des armatures longitudinales et transversales des poteaux, poutres et semelles.',
-      ar: 'دورة تطبيقية شاملة على برنامج أوتوديسك روبوت موجهة للمهندسين والتقنيين. ستتعلم خطوة بخطوة تصميم بناية سكنية R+2: نمذجة الأعمدة والروافد والأرضيات، تطبيق الحمولات الدائمة والمتغيرة، إنشاء الطيف الزلزالي الجزائري RPA 2024، التحقق من الانزياحات والتسليح النهائي للقواعد والأساسات.'
+      fr: 'Une formation 100% pratique sur Autodesk Robot dédiée aux ingénieurs et techniciens. Vous apprendrez pas à pas à concevoir un bâtiment en béton armé R+2 : modélisation de la structure poteaux-poutres et dalles, application des charges permanentes (G) et d’exploitation (Q), génération du spectre sismique selon le RPA 99 version 2003, vérification de la rigidité, déplacements inter-étages et dimensionnement des armatures longitudinales et transversales des poteaux, poutres et semelles.',
+      ar: 'دورة تطبيقية شاملة على برنامج أوتوديسك روبوت موجهة للمهندسين والتقنيين. ستتعلم خطوة بخطوة تصميم بناية سكنية R+2: نمذجة الأعمدة والروافد والأرضيات، تطبيق الحمولات الدائمة والمتغيرة، إنشاء الطيف الزلزالي الجزائري RPA99 v2003، التحقق من الانزياحات والتسليح النهائي للقواعد والأساسات.'
     },
-    standards: ['RPA 2024', 'BAEL 91 modifié 99 / CBA 93', 'DTR B.C 2.2'],
+    standards: ['RPA 99 v2003', 'BAEL 91 modifié 99 / CBA 93', 'DTR B.C 2.2'],
     deliverables: [
       'Modèle 3D Robot (.rtd) du projet complet',
       'Note de calcul complète prête pour le CTC',
@@ -32,10 +32,10 @@ export const COURSES_DATA: Course[] = [
       'Enregistrements vidéo HD accessibles à vie'
     ],
     instructor: {
-      name: 'Ing. Hocine Salehi (أ. صالحي حسين)',
-      title: 'Ingénieur d’État en Génie Civil (Béton Armé)',
+      name: 'Ing. Mourad Benali',
+      title: 'Ingénieur d’État en Génie Civil (Agréé CTC)',
       experience: '12 ans d’expérience en bureau d’études technique',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
       bio: 'Spécialiste en calcul des structures en béton armé et parasismique, ayant validé plus de 180 dossiers CTC à travers le territoire national.'
     },
     syllabus: [
@@ -46,7 +46,7 @@ export const COURSES_DATA: Course[] = [
           'Lecture des plans d’architecture et repérage de la trame',
           'Prédimensionnement des poteaux, poutres principales et secondaires selon le CBA 93',
           'Choix du système de plancher (Corps creux 16+4 cm ou dalle pleine)',
-          'Configuration initiale de Robot (Unités, normes BAEL 91 et RPA 2024)'
+          'Configuration initiale de Robot (Unités, normes BAEL 91 et RPA 99)'
         ]
       },
       {
@@ -60,7 +60,7 @@ export const COURSES_DATA: Course[] = [
         ]
       },
       {
-        title: 'Module 3 : Chargement & Analyse Sismique RPA 2024',
+        title: 'Module 3 : Chargement & Analyse Sismique RPA 99 v2003',
         duration: '9 Heures',
         topics: [
           'Application des charges gravitaires G et Q',
@@ -74,7 +74,7 @@ export const COURSES_DATA: Course[] = [
         title: 'Module 4 : Dimensionnement des Armatures & Fondations',
         duration: '9 Heures',
         topics: [
-          'Ferraillage des poteaux (Section d’acier minimale RPA 2024, espacement des cadres)',
+          'Ferraillage des poteaux (Section d’acier minimale RPA, espacement des cadres)',
           'Ferraillage des poutres en flexion simple et effort tranchant',
           'Dimensionnement des semelles isolées sous poteaux et semelles filantes',
           'Édition de la note de calcul CTC et plans de ferraillage AutoCAD'
@@ -106,7 +106,7 @@ export const COURSES_DATA: Course[] = [
       fr: 'Cette formation approfondie vous guide dans la modélisation et l’analyse dynamique avancée d’un bâtiment R+4 avec voiles de contreventement sous CSI ETABS. Vous maîtriserez la définition des sections fissurées, l’interaction sol-structure, le calcul des efforts dans les voiles (Piers & Spandrels), la vérification P-Delta et le dimensionnement parasismique complet validé par les bureaux d’études et le CTC.',
       ar: 'دورة معمقة على برنامج ETABS لحساب وتحليل بناية R+4 مع جدران القص (Voiles). ستتقن النمذجة المتقدمة، تعريف الصلابة المتشققة، فحص التأثيرات الديناميكية P-Delta، وتصميم تسليح الجدران الخرسانية بدقة واحترافية.'
     },
-    standards: ['RPA 2024', 'BAEL 91 / Eurocode 2', 'DTR Règles Parasismiques'],
+    standards: ['RPA 99 v2003', 'BAEL 91 / Eurocode 2', 'DTR Règles Parasismiques'],
     deliverables: [
       'Fichier modèle ETABS (.edb) et export E2K',
       'Feuille Excel d’interaction et ferraillage des voiles Piers',
@@ -116,10 +116,10 @@ export const COURSES_DATA: Course[] = [
       'Certificat d’achèvement de formation'
     ],
     instructor: {
-      name: 'Ing. Hocine Salehi (أ. صالحي حسين)',
-      title: 'Ingénieur d’État en Génie Civil (Béton Armé)',
+      name: 'Ing. Karim Ould-Kaci',
+      title: 'Consultant Senior en Génie Parasismique',
       experience: '15 ans d’expérience en modélisation CSI & contrôle CTC',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
       bio: 'Enseignant vacataire et chef de bureau d’études, spécialisé dans les structures moyennes et hautes portées en zone à forte sismicité.'
     },
     syllabus: [
@@ -127,7 +127,7 @@ export const COURSES_DATA: Course[] = [
         title: 'Module 1 : Conception structurale parasismique & Implantation des voiles',
         duration: '7 Heures',
         topics: [
-          'Principes de régularité en plan et en élévation selon le RPA 2024',
+          'Principes de régularité en plan et en élévation selon le RPA 99',
           'Disposition optimale des voiles de contreventement pour minimiser la torsion',
           'Calcul du centre de masse et du centre de torsion',
           'Introduction des modificateurs de rigidité (Section cracked modifiers)'
@@ -144,7 +144,7 @@ export const COURSES_DATA: Course[] = [
         ]
       },
       {
-        title: 'Module 3 : Analyse Modale & Vérifications Réglementaires RPA 2024',
+        title: 'Module 3 : Analyse Modale & Vérifications Réglementaires RPA',
         duration: '10 Heures',
         topics: [
           'Spectre de réponse sismique (Définition manuelle et automatique)',
@@ -185,10 +185,10 @@ export const COURSES_DATA: Course[] = [
       ar: 'نمذجة وحساب زلزالي للمنشآت المشيدة بنظام القولبة النفقية (Coffrage Tunnel) كالمشاريع السكنية AADL وLPP.'
     },
     fullDesc: {
-      fr: 'Le système tunnel est le mode constructif dominant pour les grands programmes de logements en Algérie (AADL, LPP). Cette formation spécialisée vous apprend la spécificité des voiles porteurs continus coulés en même temps que les dalles, le comportement rigide de la boîte, l’application des charges sismiques et le calcul du ferraillage des voiles et dalles tunnels selon le RPA 2024.',
+      fr: 'Le système tunnel est le mode constructif dominant pour les grands programmes de logements en Algérie (AADL, LPP). Cette formation spécialisée vous apprend la spécificité des voiles porteurs continus coulés en même temps que les dalles, le comportement rigide de la boîte, l’application des charges sismiques et le calcul du ferraillage des voiles et dalles tunnels selon le RPA 99 v2003.',
       ar: 'نظام القوالب النفقية يعتبر النظام الأبرز في المشاريع السكنية الكبرى بالجزائر (عدل وLPP). ستتعلم في هذه الدورة الخصوصيات الإنشائية للجدران الحاملة والأسقف المصبوبة تزامناً، سلوك الصندوق الجاسئ، والحساب الزلزالي الدقيق للتسليح والتفاصيل التنفيذية.'
     },
-    standards: ['RPA 2024', 'CBA 93', 'Cahier des charges AADL / CTC'],
+    standards: ['RPA 99 v2003', 'CBA 93', 'Cahier des charges AADL / CTC'],
     deliverables: [
       'Modèle complet ETABS du projet AADL type',
       'Feuille de calcul des armatures de peau et barres d’about des voiles',
@@ -197,10 +197,10 @@ export const COURSES_DATA: Course[] = [
       'Certificat de formation'
     ],
     instructor: {
-      name: 'Ing. Hocine Salehi (أ. صالحي حسين)',
-      title: 'Ingénieur d’État en Génie Civil (Béton Armé)',
+      name: 'Ing. Farouk Zerrouki',
+      title: 'Chef de projet logements & expert CTC',
       experience: '16 ans dans les grands projets de construction industrielle',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=300&q=80',
       bio: 'A supervisé la réalisation de plus de 10 000 logements en système coffrage tunnel à Alger, Oran et Constantine.'
     },
     syllabus: [
@@ -265,10 +265,10 @@ export const COURSES_DATA: Course[] = [
       ar: 'دراسة المنشآت بنظام الجدران الحاملة LECCY: توزيع الأحمال، التدعيم بالجدران الخرسانية والتفاصيل الإنشائية.'
     },
     fullDesc: {
-      fr: 'Le système constructif LECCY à voiles porteurs en béton armé offre une excellente rigidité pour les bâtiments collectifs. Dans cette formation sur ETABS, vous apprendrez la descente de charges spécifique, la prise en compte des ouvertures décalées, le comportement en flexion composée des trumeaux et le ferraillage rigoureux selon le RPA 2024.',
+      fr: 'Le système constructif LECCY à voiles porteurs en béton armé offre une excellente rigidité pour les bâtiments collectifs. Dans cette formation sur ETABS, vous apprendrez la descente de charges spécifique, la prise en compte des ouvertures décalées, le comportement en flexion composée des trumeaux et le ferraillage rigoureux selon le RPA 99 v2003.',
       ar: 'نظام LECCY القائم على الجدران الخرسانية الحاملة يوفر متانة ممتازة للعمارات السكنية. ستتعلم في هذه الدورة كيفية توزيع الحمولات، ونمذجة الفتحات غير المنتظمة، وحساب الانعطاف المركب وتسليح المقاطع بدقة متناهية.'
     },
-    standards: ['RPA 2024', 'BAEL 91 / Eurocode 2', 'DTR Règles de calcul des voiles'],
+    standards: ['RPA 99 v2003', 'BAEL 91 / Eurocode 2', 'DTR Règles de calcul des voiles'],
     deliverables: [
       'Modèle complet ETABS du système LECCY',
       'Tableaux d’interaction efforts normaux - moments N-M',
@@ -276,10 +276,10 @@ export const COURSES_DATA: Course[] = [
       'Attestation de suivi certifiée'
     ],
     instructor: {
-      name: 'Ing. Hocine Salehi (أ. صالحي حسين)',
-      title: 'Ingénieur d’État en Génie Civil (Béton Armé)',
+      name: 'Ing. Mourad Benali',
+      title: 'Ingénieur d’État en Génie Civil (Agréé CTC)',
       experience: '12 ans d’expérience en bureau d’études technique',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
       bio: 'Expert en structures voiles et réhabilitation d’immeubles d’habitation.'
     },
     syllabus: [
@@ -342,10 +342,10 @@ export const COURSES_DATA: Course[] = [
       ar: 'حساب وتصميم بناية متعددة الطوابق من الهياكل المعدنية مع الأرضيات المركبة وأنظمة التدعيم وفق Eurocode 3 وCCM97.'
     },
     fullDesc: {
-      fr: 'Une formation de référence pour maîtriser la conception des bâtiments multi-étages en charpente métallique sous Autodesk Robot. Vous y aborderez la conception des planchers collaborants acier-béton, le dimensionnement des poteaux (HEA, HEB, HD), des poutres principales et secondaires (IPE), la vérification du déversement, du flambement, ainsi que l’analyse des contreventements en croix de Saint-André ou en V inversé sous séisme RPA 2024 et Eurocode 3.',
-      ar: 'دورة مرجعية لإتقان تصميم البنايات متعددة الطوابق بالهياكل المعدنية على برنامج روبوت. ستتعلم تصميم الأسقف المركبة (Planchers Collaborants)، واختيار المقاطع المناسبة (HEA, HEB, IPE, PRS)، وفحص الاستقرار ومقاومة الانبعاج (Flambement) والالتواء الجانبي (Déversement) والتأثيرات الزلزالية وفق RPA 2024.'
+      fr: 'Une formation de référence pour maîtriser la conception des bâtiments multi-étages en charpente métallique sous Autodesk Robot. Vous y aborderez la conception des planchers collaborants acier-béton, le dimensionnement des poteaux (HEA, HEB, HD), des poutres principales et secondaires (IPE), la vérification du déversement, du flambement, ainsi que l’analyse des contreventements en croix de Saint-André ou en V inversé sous séisme RPA et Eurocode 3.',
+      ar: 'دورة مرجعية لإتقان تصميم البنايات متعددة الطوابق بالهياكل المعدنية على برنامج روبوت. ستتعلم تصميم الأسقف المركبة (Planchers Collaborants)، واختيار المقاطع المناسبة (HEA, HEB, IPE, PRS)، وفحص الاستقرار ومقاومة الانبعاج (Flambement) والالتواء الجانبي (Déversement) والتأثيرات الزلزالية.'
     },
-    standards: ['CCM 97 (Algérie)', 'Eurocode 3 (NF EN 1993)', 'RPA 2024 (Chapitre Métal)'],
+    standards: ['CCM 97 (Algérie)', 'Eurocode 3 (NF EN 1993)', 'RPA 99 v2003 (Chapitre Métal)'],
     deliverables: [
       'Modèle complet Robot (.rtd) du bâtiment métallique multi-étages',
       'Tableau comparatif des ratios d’acier et optimisation des profilés',
@@ -354,10 +354,10 @@ export const COURSES_DATA: Course[] = [
       'Accès au support technique et attestation'
     ],
     instructor: {
-      name: 'Ing. Aymen Saadallah (أ. أيمن سعد الله)',
-      title: 'Spécialiste Charpente Métallique & Calcul des Structures',
+      name: 'Ing. Tarek Meziane',
+      title: 'Expert Charpente Métallique & Consultant International',
       experience: '18 ans en calcul d’ouvrages d’art et structures métalliques',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
       bio: 'Ingénieur concepteur de structures complexes, hangars de grande portée et plateformes pétrolières pour Sonatrach et grands groupes industriels.'
     },
     syllabus: [
@@ -420,27 +420,27 @@ export const COURSES_DATA: Course[] = [
     badge: 'بروموسيون 50 ساعة - 5000 دج',
     thumbnail: 'https://plus.unsplash.com/premium_photo-1661963747336-44ac33c19145?q=80&w=876&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D',
     shortDesc: {
-      fr: 'Dimensionnement complet d’un hangar industriel : portiques, pannes, liernes, vent selon RNV 2013 et pont roulant avec Robot.',
-      ar: 'تصميم وحساب هناجر صناعية متكاملة: إطارات Portiques، مدادات Pannes، حساب الرياح RNV 2013 والرافعة الشوكية (Pont Roulant).'
+      fr: 'Dimensionnement complet d’un hangar industriel : portiques, pannes, liernes, vent selon RNV 99 v2013 et pont roulant avec Robot.',
+      ar: 'تصميم وحساب هناجر صناعية متكاملة: إطارات Portiques، مدادات Pannes، حساب الرياح RNV99 v2013 والرافعة الشوكية (Pont Roulant).'
     },
     fullDesc: {
-      fr: 'Le hangar métallique est le projet le plus fréquent en bureau d’études en Algérie. Cette formation complète sur Autodesk Robot couvre l’intégralité du cycle de calcul : étude des pannes en ZED ou IPE soumises à la flexion déviée, calcul des liernes et suspentes, calcul manuel et automatique du vent selon le RNV 2013, dimensionnement des portiques à traverses brisées, stabilités longitudinales en palées, et intégration des charges dynamiques d’un pont roulant.',
-      ar: 'الهناجر المعدنية هي الأكثر طلباً في سوق العمل الهندسي بالجزائر. تغطي هذه الدورة على برنامج أوتوديسك روبوت جميع مراحل الحساب: حساب المدادات (Pannes) تحت الانعطاف المنحرف، تأثيرات الرياح وفق النظام الجزائري RNV 2013، تصميم الإطارات، أنظمة التدعيم، وإضافة أحمال الرافعات الجسرية (Pont Roulant).'
+      fr: 'Le hangar métallique est le projet le plus fréquent en bureau d’études en Algérie. Cette formation complète sur Autodesk Robot couvre l’intégralité du cycle de calcul : étude des pannes en ZED ou IPE soumises à la flexion déviée, calcul des liernes et suspentes, calcul manuel et automatique du vent selon le RNV 99 version 2013, dimensionnement des portiques à traverses brisées, stabilités longitudinales en palées, et intégration des charges dynamiques d’un pont roulant.',
+      ar: 'الهناجر المعدنية هي الأكثر طلباً في سوق العمل الهندسي بالجزائر. تغطي هذه الدورة على برنامج أوتوديسك روبوت جميع مراحل الحساب: حساب المدادات (Pannes) تحت الانعطاف المنحرف، تأثيرات الرياح وفق النظام الجزائري RNV 99 v2013، تصميم الإطارات، أنظمة التدعيم، وإضافة أحمال الرافعات الجسرية (Pont Roulant).'
     },
-    standards: ['RNV 2013 (Vent & Neige)', 'CCM 97 / Eurocode 3', 'RPA 2024'],
+    standards: ['RNV 99 v2013 (Vent & Neige)', 'CCM 97 / Eurocode 3', 'RPA 99 v2003'],
     deliverables: [
       'Fichier modèle Robot (.rtd) du hangar industriel complet avec pont roulant',
-      'Feuille Excel automatisée de calcul du vent selon le RNV 2013',
+      'Feuille Excel automatisée de calcul du vent selon le RNV 99 v2013',
       'Feuille de calcul des pannes en flexion déviée',
       'Plans types AutoCAD de détails de bardage et toiture',
       'Note de calcul prête pour le CTC',
       'Certificat de formation'
     ],
     instructor: {
-      name: 'Ing. Aymen Saadallah (أ. أيمن سعد الله)',
-      title: 'Spécialiste Charpente Métallique & Calcul des Structures',
+      name: 'Ing. Tarek Meziane',
+      title: 'Expert Charpente Métallique & Consultant International',
       experience: '18 ans en calcul d’ouvrages d’art et structures métalliques',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
       bio: 'Formateur certifié Autodesk, ayant conçu plus de 250 hangars industriels et plateformes logistiques.'
     },
     syllabus: [
@@ -455,7 +455,7 @@ export const COURSES_DATA: Course[] = [
         ]
       },
       {
-        title: 'Module 2 : Actions Climatiques selon le RNV 2013',
+        title: 'Module 2 : Actions Climatiques selon le RNV 99 v2013',
         duration: '9 Heures',
         topics: [
           'Pression dynamique de référence qref par zone de vent (Zone I à V)',
@@ -501,14 +501,14 @@ export const COURSES_DATA: Course[] = [
     badge: 'بروموسيون 50 ساعة - 5000 دج',
     thumbnail: 'https://plus.unsplash.com/premium_photo-1661963747336-44ac33c19145?q=80&w=876&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D',
     shortDesc: {
-      fr: 'Modélisation 3D, analyse spatiale, charges de vent RNV 2013 et vérification des profilés métalliques sous CSI ETABS.',
-      ar: 'نمذجة ثلاثية الأبعاد، تحليل فضاءي، أحمال الرياح RNV 2013 وفحص المقاطع الفولاذية ببرنامج CSI ETABS.'
+      fr: 'Modélisation 3D, analyse spatiale, charges de vent RNV 99 et vérification des profilés métalliques sous CSI ETABS.',
+      ar: 'نمذجة ثلاثية الأبعاد، تحليل فضاءي، أحمال الرياح RNV 99 وفحص المقاطع الفولاذية ببرنامج CSI ETABS.'
     },
     fullDesc: {
       fr: 'Maîtrisez la conception des hangars et structures industrielles en acier avec CSI ETABS. Cette formation vous montre comment exploiter les puissantes fonctionnalités de calcul spatial d’ETABS : définition des sections non-prismatiques (Jarrets), assignation des charges de surface pour le vent, vérification des sections selon l’Eurocode 3 et AISC 360, et extraction des réactions aux appuis pour le dimensionnement des massifs de fondation.',
       ar: 'احترف تصميم الهناجر والمنشآت الصناعية الفولاذية باستخدام برنامج CSI ETABS. تغطي هذه الدورة النمذجة المتقدمة للمقاطع المتغيرة، أحمال الرياح، التحقق من المقاطع وفق Eurocode 3 وAISC 360، واستخراج ردود الأفعال لحساب قواعد التأسيس.'
     },
-    standards: ['Eurocode 3 (EC3)', 'AISC 360-16', 'RNV 2013'],
+    standards: ['Eurocode 3 (EC3)', 'AISC 360-16', 'RNV 99 v2013'],
     deliverables: [
       'Modèle spatial ETABS (.edb) du hangar',
       'Fichier de sections non-prismatiques pour jarrets',
@@ -517,10 +517,10 @@ export const COURSES_DATA: Course[] = [
       'Certificat de fin de formation'
     ],
     instructor: {
-      name: 'Ing. Aymen Saadallah (أ. أيمن سعد الله)',
-      title: 'Spécialiste Charpente Métallique & Calcul des Structures',
+      name: 'Ing. Karim Ould-Kaci',
+      title: 'Consultant Senior en Génie Parasismique',
       experience: '15 ans d’expérience en modélisation CSI & contrôle CTC',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
       bio: 'Spécialiste de la suite CSI (ETABS, SAP2000, SAFE) pour les ouvrages en béton armé et charpente métallique.'
     },
     syllabus: [
@@ -595,10 +595,10 @@ export const COURSES_DATA: Course[] = [
       'Certificat de formation professionnelle BIM'
     ],
     instructor: {
-      name: 'Ing. Aymen Saadallah (أ. أيمن سعد الله)',
-      title: 'Spécialiste Charpente Métallique & Calcul des Structures',
+      name: 'Ing. Walid Charef',
+      title: 'BIM Manager & Spécialiste Tekla Structures',
       experience: '14 ans en modélisation et fabrication d’usines et grands centres commerciaux',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80',
       bio: 'Consultant pour les plus grands ateliers de construction métallique en Algérie et dans le Golfe.'
     },
     syllabus: [
@@ -674,10 +674,10 @@ export const COURSES_DATA: Course[] = [
       'Attestation certifiée'
     ],
     instructor: {
-      name: 'Ing. Aymen Saadallah (أ. أيمن سعد الله)',
-      title: 'Spécialiste Charpente Métallique & Calcul des Structures',
+      name: 'Ing. Walid Charef',
+      title: 'BIM Manager & Spécialiste Tekla Structures',
       experience: '14 ans en modélisation et fabrication d’usines et grands centres commerciaux',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=300&q=80',
       bio: 'Expert en automatisation des dessins d’atelier et réduction des coûts de fabrication.'
     },
     syllabus: [
@@ -751,10 +751,10 @@ export const COURSES_DATA: Course[] = [
       'Attestation certifiée d’aptitude au calcul CBFEM'
     ],
     instructor: {
-      name: 'Ing. Aymen Saadallah (أ. أيمن سعد الله)',
-      title: 'Spécialiste Charpente Métallique & Calcul des Structures',
+      name: 'Ing. Tarek Meziane',
+      title: 'Expert Charpente Métallique & Consultant International',
       experience: '18 ans en calcul d’ouvrages d’art et structures métalliques',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
       bio: 'Formateur agréé IDEA StatiCa et pionnier de l’analyse par éléments finis des assemblages en Afrique du Nord.'
     },
     syllabus: [
@@ -830,10 +830,10 @@ export const COURSES_DATA: Course[] = [
       'Attestation de formation'
     ],
     instructor: {
-      name: 'Ing. Hocine Salehi (أ. صالحي حسين)',
+      name: 'Ing. Mourad Benali',
       title: 'Ingénieur d’État en Génie Civil (Agréé CTC)',
       experience: '12 ans d’expérience en bureau d’études technique',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
       bio: 'Formateur expérimenté en dessin technique assisté par ordinateur et méthodes de chantier.'
     },
     syllabus: [
@@ -910,7 +910,7 @@ export const COURSES_DATA: Course[] = [
       name: 'Ing. Djamel Hamidi',
       title: 'Ingénieur Principal des Travaux Publics & VRD',
       experience: '16 ans en conception d’autoroutes et voies express en Algérie',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80',
       bio: 'Chef de projet ayant mené les études techniques de nombreux tronçons routiers et déviations de villes.'
     },
     syllabus: [
@@ -991,7 +991,7 @@ export const COURSES_DATA: Course[] = [
       name: 'Ing. Djamel Hamidi',
       title: 'Ingénieur Principal des Travaux Publics & VRD',
       experience: '16 ans en conception d’autoroutes et voies express en Algérie',
-      avatar: '',
+      avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=300&q=80',
       bio: 'Expert certifié Geomedia Covadis, intervenant sur les grands projets d’aménagement urbain et pôles universitaires.'
     },
     syllabus: [
@@ -1051,7 +1051,7 @@ export const INITIAL_REVIEWS = [
     courseId: 'etabs-ba-r4',
     courseTitle: 'ETABS Bâtiment en Béton Armé (R+4)',
     rating: 5,
-    comment: 'دورة ممتازة جداً ومفيدة لأقصى درجة. المهندس شرح بالتفصيل المعقد التحقق من الـ RPA 2024 وتوزيع الـ Voiles. مباشرة بعد إتمام الدورة استطعت تقديم أول ملف CTC بدون أي ملاحظات رفض. بارك الله فيكم!',
+    comment: 'دورة ممتازة جداً ومفيدة لأقصى درجة. المهندس شرح بالتفصيل المعقد التحقق من الـ RPA 99 وتوزيع الـ Voiles. مباشرة بعد إتمام الدورة استطعت تقديم أول ملف CTC بدون أي ملاحظات رفض. بارك الله فيكم!',
     createdAt: '2026-09-15T14:30:00Z'
   },
   {
@@ -1063,7 +1063,7 @@ export const INITIAL_REVIEWS = [
     courseId: 'robot-hangar-metal',
     courseTitle: 'Robot Hangar Métallique Industriel',
     rating: 5,
-    comment: 'Formation exceptionnelle sur Robot et le vent RNV 2013. Les feuilles de calcul Excel et le suivi par téléphone pour confirmer l’inscription étaient très professionnels. Le formateur répond à toutes les questions techniques.',
+    comment: 'Formation exceptionnelle sur Robot et le vent RNV 99. Les feuilles de calcul Excel et le suivi par téléphone pour confirmer l’inscription étaient très professionnels. Le formateur répond à toutes les questions techniques.',
     createdAt: '2026-09-28T10:15:00Z'
   },
   {

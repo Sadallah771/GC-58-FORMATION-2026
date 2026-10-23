@@ -12,8 +12,7 @@ import {
   X, 
   LogIn, 
   LogOut,
-  User,
-  Sparkles
+  User
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_EMAIL } from '../firebase';
@@ -114,9 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>{isAr ? 'الدورات التدريبية' : 'Formations'}</span>
           </button>
 
-
-
-          {/* WhatsApp Button */}
+          {/* WhatsApp Button: replacing "ديسكوتي" with "أكمل الطلب عبر الواتساب" */}
           <a
             href={whatsappUrl}
             target="_blank"
@@ -256,8 +253,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <BookOpen className="w-5 h-5" />
             <span>{isAr ? 'قائمة الدورات التدريبية' : 'Toutes les formations'}</span>
           </button>
-
-
 
           <a
             href={whatsappUrl}
