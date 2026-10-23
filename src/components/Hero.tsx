@@ -8,8 +8,7 @@ import {
   MessageSquare, 
   ArrowRight, 
   CheckCircle2, 
-  Sparkles,
-  Bot
+  Sparkles
 } from 'lucide-react';
 import { Language } from '../types';
 
@@ -17,7 +16,6 @@ interface HeroProps {
   language: Language;
   onExploreCourses: () => void;
   onOpenFastEnroll: () => void;
-  onOpenAIAssistant?: () => void;
   sitePhone: string;
 }
 
@@ -25,7 +23,6 @@ export const Hero: React.FC<HeroProps> = ({
   language,
   onExploreCourses,
   onOpenFastEnroll,
-  onOpenAIAssistant,
   sitePhone,
 }) => {
   const isAr = language === 'ar';
@@ -160,15 +157,7 @@ export const Hero: React.FC<HeroProps> = ({
               <span>{isAr ? 'طلب الدورة والتسجيل المباشر' : 'Commander une formation'}</span>
             </button>
 
-            {onOpenAIAssistant && (
-              <button
-                onClick={onOpenAIAssistant}
-                className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-amber-300 font-bold text-xs sm:text-sm border border-amber-500/40 shadow-lg shadow-amber-500/10 transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Bot className="w-4 h-4 text-amber-400 animate-bounce" />
-                <span>{isAr ? '✨ استشر GC58 AI' : '✨ GC58 AI'}</span>
-              </button>
-            )}
+
 
             <a
               href={whatsappUrl}

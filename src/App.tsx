@@ -8,9 +8,7 @@ import { EnrollmentModal } from './components/EnrollmentModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ReviewsSection } from './components/ReviewsSection';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
-import { AIAssistantModal } from './components/AIAssistantModal';
 import { AddReviewModal } from './components/AddReviewModal';
-import { Bot } from 'lucide-react';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
 import { Course, Language } from './types';
@@ -33,7 +31,6 @@ function AppContent() {
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [enrollPreselectedIds, setEnrollPreselectedIds] = useState<string[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isAIAssistantOpen, setIsAIAssistantOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Sync HTML dir with selected language
@@ -112,7 +109,6 @@ function AppContent() {
         selectedCourseIds={selectedCourseIds}
         onOpenCartOrEnroll={handleOpenCartOrEnroll}
         onOpenAuth={() => setIsAuthModalOpen(true)}
-        onOpenAIAssistant={() => setIsAIAssistantOpen(true)}
         currentView={currentView}
         setCurrentView={setCurrentView}
         sitePhone={sitePhone}
@@ -129,7 +125,6 @@ function AppContent() {
                 el?.scrollIntoView({ behavior: 'smooth' });
               }}
               onOpenFastEnroll={handleOpenCartOrEnroll}
-              onOpenAIAssistant={() => setIsAIAssistantOpen(true)}
               sitePhone={sitePhone}
             />
 
@@ -161,24 +156,6 @@ function AppContent() {
         )}
       </main>
 
-      {/* Floating AI Consultant Widget Launcher (Bottom-Left) */}
-      <button
-        onClick={() => setIsAIAssistantOpen(true)}
-        className="fixed bottom-6 left-6 z-40 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2.5 shadow-2xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all border border-amber-300/40 cursor-pointer"
-        title={language === 'ar' ? 'استشر وكيل الذكاء الاصطناعي GC58 AI' : 'Conseiller GC58 AI'}
-      >
-        <div className="relative">
-          <Bot className="w-5 h-5 text-slate-950" />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-950 animate-ping" />
-        </div>
-        <span className="hidden sm:inline">
-          {language === 'ar' ? 'وكيل GC58 AI (استشارة هندسية مجانية)' : 'GC58 AI (Conseil Gratuit)'}
-        </span>
-        <span className="sm:hidden font-mono font-bold">
-          GC58 AI
-        </span>
-      </button>
-
       {/* Floating WhatsApp and Call button with 0797034244 */}
       <FloatingWhatsApp language={language} />
 
@@ -200,15 +177,6 @@ function AppContent() {
         language={language}
         preselectedCourseIds={enrollPreselectedIds}
         courses={courses}
-        sitePhone={sitePhone}
-      />
-
-      <AIAssistantModal
-        isOpen={isAIAssistantOpen}
-        onClose={() => setIsAIAssistantOpen(false)}
-        language={language}
-        courses={courses}
-        onSelectCourseForEnroll={handleEnrollSingleCourse}
         sitePhone={sitePhone}
       />
 

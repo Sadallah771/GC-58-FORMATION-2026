@@ -26,7 +26,8 @@ import {
   MapPin,
   FileCheck,
   LogIn,
-  X
+  X,
+  ExternalLink
 } from 'lucide-react';
 import { 
   collection, 
@@ -34,7 +35,7 @@ import {
   doc, 
   updateDoc, 
   deleteDoc, 
-  setDoc,
+  setDoc, 
   query, 
   orderBy 
 } from 'firebase/firestore';
@@ -560,6 +561,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           )}
         </button>
 
+
+
         <button
           onClick={() => setActiveTab('courses')}
           className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
@@ -960,6 +963,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+
 
       {/* TAB 3: EDIT COURSES, PRICES & IMAGES */}
       {activeTab === 'courses' && (
@@ -1437,6 +1442,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
         </div>
       )}
+
+
     </div>
   );
 };

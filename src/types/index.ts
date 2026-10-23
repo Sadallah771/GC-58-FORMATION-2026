@@ -88,4 +88,6 @@ export interface StudentProgress {
   lastUpdated: string;
 }
 
+
+
 export type Language = 'ar' | 'fr';
