@@ -14,10 +14,13 @@ import { Footer } from './components/Footer';
 import { StudentDashboard } from './components/StudentDashboard';
 import { GiftCourseSection } from './components/GiftCourseSection';
 import { GiftCourseModal } from './components/GiftCourseModal';
-import { Course, Language, GiftCourseSettings } from './types';
+import { CourseDetailModal } from './components/CourseDetailModal';
+import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { Course, Language, GiftCourseSettings, Registration, ClientLoyaltyData } from './types';
 import { COURSES_DATA } from './data/coursesData';
 import { DEFAULT_GIFT_COURSE } from './utils/driveHelper';
-import { collection, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
+import { calculateClientLoyalty } from './utils/loyaltyHelper';
+import { collection, onSnapshot, doc, getDoc, setDoc, query, where } from 'firebase/firestore';
 import { db } from './firebase';
 import { useAuth } from './context/AuthContext';
 
@@ -43,6 +46,60 @@ function AppContent() {
   const [enrollPreselectedIds, setEnrollPreselectedIds] = useState<string[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [courseForDetail, setCourseForDetail] = useState<Course | null>(null);
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+
+  // Register Service Worker for Desktop/Mobile PWA and background notifications
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker
+          .register('/sw.js')
+          .then((reg) => {
+            console.log('GC58 PWA Service Worker registered with scope:', reg.scope);
+          })
+          .catch((err) => {
+            console.warn('GC58 Service Worker registration note:', err);
+          });
+      });
+    }
+  }, []);
+
+  // User confirmed orders & loyalty state
+  const [userOrders, setUserOrders] = useState<Registration[]>([]);
+
+  useEffect(() => {
+    const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim();
+    if (!emailToUse) {
+      setUserOrders([]);
+      return;
+    }
+
+    try {
+      const q = query(collection(db, 'registrations'), where('email', '==', emailToUse));
+      const unsub = onSnapshot(
+        q,
+        (snapshot) => {
+          const loaded: Registration[] = [];
+          snapshot.forEach((d) => {
+            loaded.push({ id: d.id, ...(d.data() as Registration) });
+          });
+          setUserOrders(loaded);
+        },
+        (err) => {
+          console.warn('User orders listener info:', err);
+        }
+      );
+      return () => unsub();
+    } catch (e) {
+      console.warn('Orders listener setup:', e);
+    }
+  }, [user]);
+
+  const userLoyalty = React.useMemo(() => {
+    const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim() || null;
+    return calculateClientLoyalty(userOrders, emailToUse, null);
+  }, [userOrders, user]);
 
   // Sync HTML dir with selected language
   useEffect(() => {
@@ -138,6 +195,13 @@ function AppContent() {
         onOpenEnroll={handleOpenCartOrEnroll}
       />
 
+      {/* PWA Smart Installation Banner & Multi-Device Helper */}
+      <PWAInstallBanner
+        language={language}
+        isOpenModal={isInstallModalOpen}
+        onCloseModal={() => setIsInstallModalOpen(false)}
+      />
+
       {/* Top Navigation */}
       <Navbar
         language={language}
@@ -149,6 +213,7 @@ function AppContent() {
         setCurrentView={setCurrentView}
         sitePhone={sitePhone}
         onOpenGiftModal={() => setIsGiftModalOpen(true)}
+        onOpenInstallModal={() => setIsInstallModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -183,6 +248,8 @@ function AppContent() {
             <CourseCatalog
               language={language}
               courses={courses}
+              userLoyalty={userLoyalty}
+              onSelectCourseForDetail={(c) => setCourseForDetail(c)}
               onSelectCourseForEnroll={handleEnrollSingleCourse}
               selectedCourseIds={selectedCourseIds}
               onToggleSelectCourse={toggleSelectCourse}
@@ -244,6 +311,15 @@ function AppContent() {
         preselectedCourseIds={enrollPreselectedIds}
         courses={courses}
         sitePhone={sitePhone}
+        userLoyalty={userLoyalty}
+      />
+
+      <CourseDetailModal
+        course={courseForDetail}
+        onClose={() => setCourseForDetail(null)}
+        language={language}
+        userLoyalty={userLoyalty}
+        onEnroll={handleEnrollSingleCourse}
       />
 
       <AuthModal

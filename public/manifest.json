@@ -1,0 +1,71 @@
+{
+  "id": "/",
+  "name": "GC58 FORMATIONS - Génie Civil",
+  "short_name": "GC58",
+  "description": "منصة التكوين والتدريب الاحترافي في الهندسة المدنية بالجزائر - دورات معتمدة، ملفات وبرامج هندسية",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["education", "productivity", "engineering"],
+  "run_on_os_login": {
+    "mode": "window-controls-overlay"
+  },
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "دورات الهندسة المدنية",
+      "short_name": "الدورات",
+      "description": "استعراض الدورات المعتمدة (Béton Armé, Charpente, VRD)",
+      "url": "/#courses",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "دورة الهدية المجانية",
+      "short_name": "الهدية",
+      "description": "مشاهدة حلقات دورة الهدية لرواد الموقع",
+      "url": "/#gift",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "لوحة الطالب والعضوية",
+      "short_name": "حسابي",
+      "description": "متابعة الدورات وقسائم الاشتراك وبطاقة العضوية",
+      "url": "/#dashboard",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}

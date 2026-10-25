@@ -6,14 +6,19 @@ import {
   Check, 
   ArrowRight, 
   Plus,
-  User
+  User,
+  CreditCard,
+  Sparkles,
+  Info
 } from 'lucide-react';
-import { Course, CourseCategory, Language } from '../types';
+import { Course, CourseCategory, Language, ClientLoyaltyData } from '../types';
 import { COURSES_DATA } from '../data/coursesData';
+import { calculateCourseDiscount, getTierNameAr, getTierDiscountPercent } from '../utils/loyaltyHelper';
 
 interface CourseCatalogProps {
   language: Language;
   courses?: Course[];
+  userLoyalty?: ClientLoyaltyData | null;
   onSelectCourseForDetail?: (course: Course) => void;
   onSelectCourseForEnroll: (course: Course) => void;
   selectedCourseIds: string[];
@@ -23,6 +28,7 @@ interface CourseCatalogProps {
 export const CourseCatalog: React.FC<CourseCatalogProps> = ({
   language,
   courses = COURSES_DATA,
+  userLoyalty,
   onSelectCourseForDetail,
   onSelectCourseForEnroll,
   selectedCourseIds,
@@ -88,7 +94,7 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
       </div>
 
       {/* Reassurance Banner in Catalog */}
-      <div className="mb-6 p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-md">
+      <div className="mb-4 p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-md">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
           <span>
@@ -101,6 +107,56 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
           {isAr ? 'تخفيض 50 ساعة' : 'Promo 50h'}
         </span>
       </div>
+
+      {/* Active Member Card Discount Banner */}
+      {(() => {
+        const activeTier = userLoyalty?.tier || 'STANDARD';
+        const activeTierPercent = getTierDiscountPercent(activeTier);
+        const activeTierName = getTierNameAr(activeTier);
+
+        return (
+          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-slate-900 to-amber-500/10 border-2 border-amber-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-lg shadow-amber-500/10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-md shadow-amber-500/20 shrink-0">
+                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-400">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs sm:text-sm font-black text-white">
+                    {isAr ? `تخفيض بطاقة العضوية (${activeTierName}):` : `Remise Carte Adhérent (${activeTier}) :`}
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-extrabold text-xs">
+                    -{activeTierPercent}% {isAr ? 'مخصومة من كل الأسعار' : 'sur tous les tarifs'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                  {isAr
+                    ? `كل أسعار الدورات بالأسفل تُحسب لك بالسعر الجديد مع بيان السعر الأصلي المعتمد للأدمن وما تم خصمه لك بالضبط!`
+                    : `Les tarifs ci-dessous affichent le prix officiel de l’admin, le montant déduit par votre carte et votre nouveau prix net.`}
+                </p>
+              </div>
+            </div>
+
+            {/* Quick overview of all tier discounts */}
+            <div className="flex items-center gap-1.5 flex-wrap self-end md:self-center">
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${activeTier === 'STANDARD' ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-slate-950/80 text-slate-400 border-slate-800'}`}>
+                Standard: 10%
+              </span>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${activeTier === 'PRO' ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-slate-950/80 text-slate-400 border-slate-800'}`}>
+                PRO: 20%
+              </span>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${activeTier === 'SILVER' ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-slate-950/80 text-slate-400 border-slate-800'}`}>
+                Silver: 20%
+              </span>
+              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${activeTier === 'GOLDEN' ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 border-yellow-300 font-black shadow-sm' : 'bg-slate-950/80 text-slate-400 border-slate-800'}`}>
+                Golden VIP: 30%
+              </span>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Category Tabs */}
       <div className="flex flex-wrap items-center gap-2 mb-4 pb-2 border-b border-slate-800/60">
@@ -175,6 +231,7 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
           const isSelected = selectedCourseIds.includes(course.id);
           const isBA = course.category === 'beton_arme';
           const isMetal = course.category === 'charpente_metallique';
+          const pricing = calculateCourseDiscount(course.price, userLoyalty?.tier || 'STANDARD');
 
           return (
             <div
@@ -204,16 +261,17 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
                   </span>
                 </div>
 
-                {/* Price & Promo Badge */}
+                {/* Price & Promo Badge with Member Discount */}
                 <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/90 border border-amber-500/40 backdrop-blur-md shadow-lg">
-                    {course.originalPrice && course.originalPrice > course.price && (
-                      <span className="text-[10px] font-mono text-slate-400 line-through">
-                        {course.originalPrice.toLocaleString()}
-                      </span>
-                    )}
+                    <span className="text-[10px] font-mono text-slate-400 line-through">
+                      {pricing.basePrice.toLocaleString()}
+                    </span>
                     <span className="text-xs font-mono font-black text-amber-300">
-                      {course.price.toLocaleString()} DA
+                      {pricing.discountedPrice.toLocaleString()} DA
+                    </span>
+                    <span className="px-1.5 py-0.2 rounded bg-emerald-500 text-slate-950 text-[9px] font-black">
+                      -{pricing.discountPercent}%
                     </span>
                   </div>
                 </div>
@@ -250,8 +308,8 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
                     </span>
                   </div>
 
-                  {/* Instructor Mini Badge - Photos removed as requested */}
-                  <div className="flex items-center gap-2.5 py-2.5 px-3 rounded-xl bg-slate-950/60 border border-slate-800/80 mb-4">
+                  {/* Instructor Mini Badge */}
+                  <div className="flex items-center gap-2.5 py-2.5 px-3 rounded-xl bg-slate-950/60 border border-slate-800/80 mb-3">
                     <div className="w-7 h-7 rounded-full bg-slate-800/90 border border-amber-500/30 flex items-center justify-center shrink-0 text-amber-400">
                       <User className="w-3.5 h-3.5" />
                     </div>
@@ -272,21 +330,59 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
                       <p className="text-[10px] text-slate-400 truncate">{course.instructor.experience}</p>
                     </div>
                   </div>
+
+                  {/* High-Clarity Cardholder Pricing Box (وش نقصتلو + السعر الجديد) */}
+                  <div className="p-3 rounded-xl bg-slate-950/90 border border-amber-500/30 mb-4 space-y-1.5 shadow-inner">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400 flex items-center gap-1 font-bold">
+                        <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{isAr ? `تخفيض بطاقة ${pricing.tierNameAr}:` : `Remise ${pricing.tierNameFr} :`}</span>
+                      </span>
+                      <span className="font-extrabold text-emerald-400 font-mono text-[11px] bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                        -{pricing.discountPercent}% ({isAr ? `وفرت ${pricing.discountAmount.toLocaleString()} دج` : `-${pricing.discountAmount.toLocaleString()} DA`})
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/80">
+                      <div className="text-[11px] font-mono">
+                        <span className="text-slate-500 line-through block">{pricing.basePrice.toLocaleString()} دج</span>
+                        <span className="text-[9px] text-slate-500">{isAr ? 'سعر الأدمن المعتمد' : 'Prix initial'}</span>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-base font-black text-amber-400 font-mono" dir="ltr">
+                          {pricing.discountedPrice.toLocaleString()} DA
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold block">
+                          {isAr ? 'السعر الجديد لحامل البطاقة' : 'Nouveau tarif'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Card Actions */}
                 <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2">
                   <button
                     onClick={() => onSelectCourseForEnroll(course)}
-                    className="flex-1 py-2.5 px-4 rounded-xl text-xs font-black text-slate-950 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 transition-all shadow-md shadow-amber-500/15 flex items-center justify-center gap-1.5"
+                    className="flex-1 py-2.5 px-3 rounded-xl text-xs font-black text-slate-950 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 transition-all shadow-md shadow-amber-500/15 flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <span>{isAr ? 'طلب الدورة (تسجيل أولي مجاني)' : 'Commander (Pré-inscription)'}</span>
+                    <span>{isAr ? 'طلب بالسعر الجديد' : 'Commander'}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
 
+                  {onSelectCourseForDetail && (
+                    <button
+                      onClick={() => onSelectCourseForDetail(course)}
+                      className="p-2.5 rounded-xl text-xs font-bold bg-slate-950 hover:bg-slate-800 text-slate-300 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer"
+                      title={isAr ? 'تفاصيل الدورة' : 'Détails du cours'}
+                    >
+                      <Info className="w-4 h-4 text-slate-400" />
+                    </button>
+                  )}
+
                   <button
                     onClick={() => onToggleSelectCourse(course.id)}
-                    className={`p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center shrink-0 ${
+                    className={`p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center shrink-0 cursor-pointer ${
                       isSelected
                         ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                         : 'bg-slate-800 text-slate-300 hover:text-amber-400 border border-slate-700/60'

@@ -19,7 +19,8 @@ import {
   BookOpen, 
   Eye, 
   X,
-  CreditCard
+  CreditCard,
+  Mail
 } from 'lucide-react';
 import { Language, Registration, LoyaltyTier } from '../types';
 import { 
@@ -432,9 +433,15 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
                     <h4 className="text-sm font-black text-white mt-0.5 truncate max-w-[200px]" title={client.fullName}>
                       {client.fullName}
                     </h4>
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
-                      <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
-                      <span>{client.wilaya}</span>
+                    <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400 mt-1">
+                      <span className="text-amber-400 font-mono font-bold" dir="ltr">{client.phone}</span>
+                      <span>•</span>
+                      <span className="text-slate-300 truncate max-w-[150px]" title={client.email}>{client.email}</span>
+                      <span>•</span>
+                      <span className="flex items-center gap-0.5">
+                        <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                        <span>{client.wilaya}</span>
+                      </span>
                     </div>
                   </div>
 
@@ -525,7 +532,7 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
                 <div className="pt-2 border-t border-slate-800/80 flex items-center gap-2">
                   <button
                     onClick={() => setSelectedClient(client)}
-                    className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all"
+                    className="flex-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5 text-amber-400" />
                     <span>{isAr ? 'معاينة البطاقة' : 'Voir Carte'}</span>
@@ -551,6 +558,16 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
                       title={isAr ? 'اتصال هاتف' : 'Appeler'}
                     >
                       <Phone className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+
+                  {client.email && (
+                    <a
+                      href={`mailto:${client.email}`}
+                      className="py-2 px-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs flex items-center justify-center transition-all"
+                      title={isAr ? 'إرسال بريد إلكتروني' : 'Envoyer un email'}
+                    >
+                      <Mail className="w-3.5 h-3.5" />
                     </a>
                   )}
                 </div>

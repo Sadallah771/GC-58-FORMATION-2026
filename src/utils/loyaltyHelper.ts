@@ -512,3 +512,97 @@ export function aggregateClientsLoyalty(orders: Registration[]): ClientSummaryWi
 
   return clients;
 }
+
+/**
+ * Returns the exact discount percentage per membership tier as specified:
+ * - Standard: 10%
+ * - PRO: 20%
+ * - Silver: 20%
+ * - Golden: 30%
+ */
+export function getTierDiscountPercent(tier?: LoyaltyTier | null): number {
+  switch (tier) {
+    case 'GOLDEN':
+      return 30;
+    case 'SILVER':
+      return 20;
+    case 'PRO':
+      return 20;
+    case 'STANDARD':
+    default:
+      return 10;
+  }
+}
+
+/**
+ * Returns user-friendly Arabic name for each card tier.
+ */
+export function getTierNameAr(tier?: LoyaltyTier | null): string {
+  switch (tier) {
+    case 'GOLDEN':
+      return 'الذهبية VIP';
+    case 'SILVER':
+      return 'الفضية النخبة';
+    case 'PRO':
+      return 'الاحترافية PRO';
+    case 'STANDARD':
+    default:
+      return 'ستوندار Standard';
+  }
+}
+
+/**
+ * Returns user-friendly French name for each card tier.
+ */
+export function getTierNameFr(tier?: LoyaltyTier | null): string {
+  switch (tier) {
+    case 'GOLDEN':
+      return 'Golden Master VIP';
+    case 'SILVER':
+      return 'Silver Privilège';
+    case 'PRO':
+      return 'Membre PRO';
+    case 'STANDARD':
+    default:
+      return 'Standard';
+  }
+}
+
+/**
+ * Calculates discount for a single course price according to member card tier.
+ */
+export function calculateCourseDiscount(basePrice: number, tier: LoyaltyTier = 'STANDARD') {
+  const discountPercent = getTierDiscountPercent(tier);
+  const discountAmount = Math.round((basePrice * discountPercent) / 100);
+  const discountedPrice = Math.max(0, basePrice - discountAmount);
+
+  return {
+    basePrice,
+    discountPercent,
+    discountAmount,
+    discountedPrice,
+    tier,
+    tierNameAr: getTierNameAr(tier),
+    tierNameFr: getTierNameFr(tier),
+  };
+}
+
+/**
+ * Calculates cart total discount based on all selected courses and the active membership tier.
+ */
+export function calculateCartDiscount(coursePrices: number[], tier: LoyaltyTier = 'STANDARD') {
+  const originalTotal = coursePrices.reduce((sum, p) => sum + (p || 0), 0);
+  const discountPercent = getTierDiscountPercent(tier);
+  const discountAmount = Math.round((originalTotal * discountPercent) / 100);
+  const netTotal = Math.max(0, originalTotal - discountAmount);
+
+  return {
+    originalTotal,
+    discountPercent,
+    discountAmount,
+    netTotal,
+    tier,
+    tierNameAr: getTierNameAr(tier),
+    tierNameFr: getTierNameFr(tier),
+  };
+}

@@ -11,15 +11,19 @@ import {
   FileSpreadsheet, 
   Layers, 
   ChevronRight,
-  PhoneCall
+  PhoneCall,
+  CreditCard,
+  Sparkles
 } from 'lucide-react';
-import { Course, Language } from '../types';
+import { Course, Language, ClientLoyaltyData } from '../types';
+import { calculateCourseDiscount } from '../utils/loyaltyHelper';
 
 interface CourseDetailModalProps {
   course: Course | null;
   onClose: () => void;
   language: Language;
   onEnroll: (course: Course) => void;
+  userLoyalty?: ClientLoyaltyData | null;
 }
 
 export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
@@ -27,12 +31,14 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
   onClose,
   language,
   onEnroll,
+  userLoyalty,
 }) => {
   if (!course) return null;
 
   const isAr = language === 'ar';
   const isBA = course.category === 'beton_arme';
   const isMetal = course.category === 'charpente_metallique';
+  const pricing = calculateCourseDiscount(course.price, userLoyalty?.tier || 'STANDARD');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
@@ -84,21 +90,42 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
             {course.title}
           </h2>
 
-          <div className="mt-4 flex flex-wrap items-baseline gap-3">
-            {course.originalPrice && course.originalPrice > course.price && (
-              <span className="text-sm font-mono text-slate-500 line-through">
-                {course.originalPrice.toLocaleString()} دج
+          {/* Pricing Breakdown: Admin Base Price, Deduction, and New Member Price */}
+          <div className="mt-4 p-4 rounded-2xl bg-slate-950/80 border border-amber-500/30 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-slate-300">
+                  {isAr ? `تخفيض بطاقة العضوية (${pricing.tierNameAr}):` : `Remise Carte Adhérent (${pricing.tierNameFr}) :`}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-xs font-black font-mono">
+                  -{pricing.discountPercent}%
+                </span>
+              </div>
+              <span className="text-xs text-emerald-400 font-bold font-mono">
+                {isAr ? `وش نقصتلك المنصة: -${pricing.discountAmount.toLocaleString()} دج` : `Montant déduit : -${pricing.discountAmount.toLocaleString()} DA`}
               </span>
-            )}
-            <div className="text-3xl font-black text-amber-400">
-              <span dir="ltr" className="inline-block font-mono">{course.price.toLocaleString()}</span> <span className="text-sm font-bold text-slate-300">دج / DZD</span>
             </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30">
-              {isAr ? 'بروموسيون 50 ساعة' : 'Offre 50h'}
-            </span>
-            <span className="text-xs text-emerald-400 font-medium">
-              {isAr ? '• تسجيل أولي بدون دفع مسبق' : '• Pré-inscription sans engagement'}
-            </span>
+
+            <div className="pt-2 border-t border-slate-800 flex flex-wrap items-baseline justify-between gap-3">
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-slate-500 line-through font-mono">
+                  {pricing.basePrice.toLocaleString()} دج
+                </span>
+                <span className="text-[10px] text-slate-500">
+                  ({isAr ? 'سعر الأدمن المعتمد' : 'Prix initial'})
+                </span>
+              </div>
+
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-slate-400">
+                  {isAr ? 'السعر الجديد بعد التخفيض:' : 'Nouveau prix net :'}
+                </span>
+                <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">
+                  {pricing.discountedPrice.toLocaleString()} <span className="text-xs text-slate-300">دج / DZD</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -223,16 +250,21 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
         {/* Modal Footer CTA */}
         <div className="p-5 sm:p-6 bg-slate-950 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 flex-shrink-0">
           <div>
-            <p className="text-xs text-slate-400">{isAr ? 'السعر المخفض (عرض 50 ساعة):' : 'Tarif Promo (50h) :'}</p>
-            <p className="text-2xl font-black text-amber-400">
-              <span dir="ltr" className="inline-block font-mono">{course.price.toLocaleString()}</span> <span className="text-xs font-bold text-slate-300">دج</span>
-            </p>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-500 line-through font-mono">{pricing.basePrice.toLocaleString()} دج</span>
+              <span className="text-emerald-400 font-bold font-mono">
+                -{pricing.discountPercent}% ({isAr ? `وفرت ${pricing.discountAmount.toLocaleString()} دج` : `-${pricing.discountAmount.toLocaleString()} DA`})
+              </span>
+            </div>
+            <div className="text-2xl font-black text-amber-400 font-mono mt-0.5">
+              <span dir="ltr" className="inline-block font-mono">{pricing.discountedPrice.toLocaleString()}</span> <span className="text-xs font-bold text-slate-300">دج / DZD</span>
+            </div>
           </div>
 
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={onClose}
-              className="flex-1 sm:flex-initial px-5 py-3 rounded-xl text-xs font-bold text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-800"
+              className="flex-1 sm:flex-initial px-5 py-3 rounded-xl text-xs font-bold text-slate-300 bg-slate-900 border border-slate-800 hover:bg-slate-800 cursor-pointer"
             >
               {isAr ? 'إغلاق' : 'Fermer'}
             </button>
@@ -241,10 +273,10 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
                 onClose();
                 onEnroll(course);
               }}
-              className="flex-1 sm:flex-initial px-7 py-3 rounded-xl text-xs sm:text-sm font-black text-slate-950 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-initial px-7 py-3 rounded-xl text-xs sm:text-sm font-black text-slate-950 bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 cursor-pointer"
             >
               <PhoneCall className="w-4 h-4 text-slate-950" />
-              <span>{isAr ? 'طلب الدورة (تسجيل أولي مجاني)' : 'Commander (Pré-inscription)'}</span>
+              <span>{isAr ? `طلب الدورة بالسعر الجديد (${pricing.discountedPrice.toLocaleString()} دج)` : `Commander (${pricing.discountedPrice.toLocaleString()} DA)`}</span>
             </button>
           </div>
         </div>

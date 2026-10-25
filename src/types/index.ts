@@ -55,6 +55,11 @@ export interface Registration {
   courseIds: string[];
   courseNames: string;
   totalAmount: number;
+  originalAmount?: number;
+  discountAmount?: number;
+  memberTier?: LoyaltyTier;
+  memberDiscountPercent?: number;
+  memberId?: string;
   status: RegistrationStatus;
   notes?: string;
   userId?: string;
@@ -132,4 +137,22 @@ export interface ClientLoyaltyData {
   progressPercent: number;
   eligibleForFreeGift: boolean;
   memberId: string;
+}
+
+export type NotificationType = 'course' | 'file' | 'message' | 'announcement' | 'discount';
+
+export interface AppNotification {
+  id?: string;
+  title: string;
+  message: string;
+  type: NotificationType;
+  link?: string;
+  actionLabel?: string;
+  isImportant?: boolean;
+  authorEmail?: string;
+  targetAudience?: 'all' | 'students' | 'guests';
+  targetTier?: LoyaltyTier | 'all';
+  createdAt: string;
+  expiresAt?: string;
+  readCount?: number;
 }

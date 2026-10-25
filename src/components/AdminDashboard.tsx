@@ -30,7 +30,11 @@ import {
   ExternalLink,
   Gift,
   Crown,
-  CreditCard
+  CreditCard,
+  Mail,
+  Copy,
+  Check,
+  Bell
 } from 'lucide-react';
 import { 
   collection, 
@@ -48,6 +52,7 @@ import { Course, Language, Registration, RegistrationStatus, GiftCourseSettings 
 import { COURSES_DATA } from '../data/coursesData';
 import { AdminGiftManager } from './AdminGiftManager';
 import { AdminMembersManager } from './AdminMembersManager';
+import { AdminNotificationsTab } from './AdminNotificationsTab';
 import { calculateClientLoyalty, aggregateClientsLoyalty } from '../utils/loyaltyHelper';
 
 interface AdminDashboardProps {
@@ -60,7 +65,7 @@ interface AdminDashboardProps {
   onOpenAuth: () => void;
   giftCourse: GiftCourseSettings;
   onSaveGiftCourse: (updated: GiftCourseSettings) => Promise<void>;
-  initialTab?: 'analytics' | 'orders' | 'members' | 'courses' | 'gift' | 'settings';
+  initialTab?: 'analytics' | 'orders' | 'members' | 'notifications' | 'courses' | 'gift' | 'settings';
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -78,7 +83,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const { user, isAdmin, isMasterAdmin, loginGoogle, loginAsMasterAdmin } = useAuth();
   const isAr = language === 'ar';
 
-  const [activeTab, setActiveTab] = useState<'analytics' | 'orders' | 'members' | 'courses' | 'gift' | 'settings'>(initialTab || 'analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'orders' | 'members' | 'notifications' | 'courses' | 'gift' | 'settings'>(initialTab || 'analytics');
   const [orders, setOrders] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,6 +91,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [tempNotes, setTempNotes] = useState('');
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [copiedTextId, setCopiedTextId] = useState<string | null>(null);
+
+  const handleCopyText = (text: string, identifier: string, labelAr = 'تم النسخ إلى الحافظة بنجاح ✅') => {
+    try {
+      navigator.clipboard.writeText(text);
+      setCopiedTextId(identifier);
+      showNotification(isAr ? labelAr : 'Copié avec succès');
+      setTimeout(() => setCopiedTextId(null), 2500);
+    } catch {
+      showNotification(text);
+    }
+  };
 
   // Course editing state including image
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
@@ -589,6 +606,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('notifications')}
+          className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'notifications'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Bell className="w-4 h-4" />
+          <span>{isAr ? 'إدارة وبث الإشعارات (Live)' : 'Notifications & Alertes'}</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('courses')}
           className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
             activeTab === 'courses'
@@ -804,112 +833,92 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             ) : (
               filteredOrders.map((order) => {
                 const isEditingNotes = editingNotesId === order.id;
-                const algerianIntPhone = order.phone.replace(/^0/, '213');
-                const voucherCode = order.id ? `GC-${order.id.slice(0, 6).toUpperCase()}` : 'GC-2026';
+                const cleanPhoneDigits = order.phone.replace(/\D/g, '');
+                const algerianIntPhone = cleanPhoneDigits.replace(/^0/, '213');
+                const voucherCode = order.voucherCode || (order.id ? `GC58-${order.id.slice(0, 6).toUpperCase()}` : 'GC58-2026');
                 const clientLoyalty = calculateClientLoyalty(orders, order.email, order.phone);
+
+                const formattedDate = order.createdAt 
+                  ? new Date(order.createdAt).toLocaleString(isAr ? 'ar-DZ' : 'fr-FR', {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : '';
+
+                const fullClientDossier = `📋 ملف العميل الرسمي - GC58 FORMATIONS
+----------------------------------------
+🔖 رقم القسيمة: #${voucherCode}
+👤 الاسم واللقب: ${order.fullName}
+📞 رقم الهاتف: ${order.phone}
+📧 البريد الإلكتروني: ${order.email}
+📍 الولاية: ${order.wilaya}
+🎓 الصفة: ${order.statusEducation}
+----------------------------------------
+📚 الدورات المطلوبة:
+${order.courseNames}
+----------------------------------------
+💵 السعر المعتمد (الأدمن): ${(order.originalAmount || order.totalAmount).toLocaleString()} دج
+✂️ الخصم المطبق (${order.memberTier || 'البطاقة'}): -${(order.discountAmount || 0).toLocaleString()} دج (-${order.memberDiscountPercent || 10}%)
+💰 المبلغ الصافي المطلوب: ${order.totalAmount.toLocaleString()} دج
+📅 تاريخ التسجيل: ${formattedDate || 'غير محدد'}
+📝 ملاحظة العميل: ${order.notes || 'لا توجد'}
+----------------------------------------`;
 
                 return (
                   <div
                     key={order.id}
-                    className={`p-5 rounded-2xl border transition-all ${
+                    className={`p-5 rounded-2xl border transition-all space-y-4 ${
                       order.status === 'en_attente'
                         ? 'bg-slate-900/95 border-amber-500/50 shadow-lg shadow-amber-500/5'
                         : 'bg-slate-900/70 border-slate-800'
                     }`}
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                      {/* Student Info & Voucher Badge */}
-                      <div className="flex-1 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 font-mono font-black text-xs">
-                            #{voucherCode}
+                    {/* Top Bar: Voucher, Date, Loyalty Badge, Status & Delete */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-500 text-slate-950 font-mono font-black text-xs shadow-sm">
+                          #{voucherCode}
+                        </span>
+                        {formattedDate && (
+                          <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium bg-slate-950/70 px-2 py-0.5 rounded border border-slate-800">
+                            <Clock className="w-3 h-3 text-amber-400" />
+                            <span>{formattedDate}</span>
                           </span>
-                          <span className="font-extrabold text-base text-white">{order.fullName}</span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                            {order.statusEducation}
+                        )}
+                        {/* Loyalty Tier Badge */}
+                        {clientLoyalty.tier === 'GOLDEN' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-sm flex items-center gap-1">
+                            👑 GOLDEN (تخفيض 30%)
                           </span>
-                          <span className="px-2 py-0.5 rounded text-[10px] font-mono text-amber-400 bg-amber-500/10">
-                            {order.wilaya}
+                        ) : clientLoyalty.tier === 'SILVER' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-slate-200 text-slate-950 shadow-sm flex items-center gap-1">
+                            ★ SILVER (تخفيض 20%)
                           </span>
-
-                          {/* Client Loyalty Badge */}
-                          {clientLoyalty.tier === 'GOLDEN' ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-sm flex items-center gap-1">
-                              👑 GOLDEN ({clientLoyalty.paidCoursesCount} دورات)
-                            </span>
-                          ) : clientLoyalty.tier === 'SILVER' ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-slate-200 text-slate-950 shadow-sm flex items-center gap-1">
-                              ★ SILVER ({clientLoyalty.paidCoursesCount} دورات)
-                            </span>
-                          ) : clientLoyalty.tier === 'PRO' ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1">
-                              ✦ PRO ({clientLoyalty.paidCoursesCount} دورات)
-                            </span>
-                          ) : clientLoyalty.paidCoursesCount > 0 ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-amber-300 border border-slate-700">
-                              {clientLoyalty.paidCoursesCount} مسددة
-                            </span>
-                          ) : null}
-
-                          {clientLoyalty.eligibleForFreeGift && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                              🎁 يستحق دورة مجانية
-                            </span>
-                          )}
-                        </div>
-
-                        <div className="text-xs text-slate-300 font-medium flex items-start gap-1.5">
-                          <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                          <span>{order.courseNames}</span>
-                        </div>
-
-                        {/* Registration & Status Badges */}
-                        <div className="flex flex-wrap items-center gap-2 pt-1">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                            📋 {isAr ? 'تسجيل مباشر بقسيمة' : 'Inscription directe'}
+                        ) : clientLoyalty.tier === 'PRO' ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1">
+                            ✦ PRO (تخفيض 20%)
                           </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-amber-300 border border-slate-700">
+                            🏷️ STANDARD (تخفيض 10%)
+                          </span>
+                        )}
 
-                          {order.paymentMethod && (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
-                              💳 {order.paymentMethod === 'baridimob' ? 'بريدي موب' : 'حساب CCP'}
-                            </span>
-                          )}
-
-                          {order.receiptUrl && (
-                            <button
-                              onClick={() => {
-                                setViewingReceiptUrl(order.receiptUrl || null);
-                                setViewingReceiptOrder(order);
-                              }}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                              title="عرض صورة وصل التحويل المرفقة"
-                            >
-                              <Image className="w-3.5 h-3.5 text-emerald-400" />
-                              <span>{isAr ? 'عرض الوصل (📷)' : 'Voir le reçu (📷)'}</span>
-                            </button>
-                          )}
-                        </div>
-
-                        {order.notes && (
-                          <p className="text-xs text-slate-400 bg-slate-950/60 p-2 rounded-lg border border-slate-800/80 inline-block">
-                            <strong className="text-slate-300">{isAr ? 'ملاحظة الطالب:' : 'Note :'}</strong> {order.notes}
-                          </p>
+                        {clientLoyalty.eligibleForFreeGift && (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                            🎁 يستحق دورة مجانية
+                          </span>
                         )}
                       </div>
 
-                      {/* Pricing, Status & Direct Actions */}
-                      <div className="flex flex-wrap items-center gap-3">
-                        <div className="text-right">
-                          <div className="text-lg font-black text-amber-400">
-                            <span dir="ltr" className="font-mono inline-block">{order.totalAmount.toLocaleString()}</span>{' '}
-                            <span className="text-xs text-slate-400">دج</span>
-                          </div>
-                        </div>
-
+                      <div className="flex items-center gap-2">
                         <select
                           value={order.status}
                           onChange={(e) => order.id && updateOrderStatus(order.id, e.target.value as RegistrationStatus)}
-                          className={`px-3 py-2 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold border focus:outline-none cursor-pointer ${
                             order.status === 'en_attente'
                               ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                               : order.status === 'appele'
@@ -938,42 +947,215 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </option>
                         </select>
 
-                        {/* Call with LTR phone */}
-                        <a
-                          href={`tel:${order.phone}`}
-                          className="p-2.5 rounded-xl bg-amber-500 text-slate-950 font-bold hover:bg-amber-400 transition-colors shadow-md shadow-amber-500/20 flex items-center gap-1.5 text-xs"
-                          title={`Appeler le ${order.phone}`}
-                        >
-                          <PhoneCall className="w-4 h-4" />
-                          <span dir="ltr" className="font-mono inline-block">{order.phone}</span>
-                        </a>
-
-                        {/* WhatsApp */}
-                        <a
-                          href={`https://wa.me/${algerianIntPhone}?text=${encodeURIComponent(
-                            `Salam ${order.fullName}, c'est l'administration de GC58 FORMATIONS concernant votre bon de commande #${voucherCode} pour la formation : ${order.courseNames}. Êtes-vous disponible ?`
-                          )}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-2.5 rounded-xl bg-[#25D366] hover:bg-[#20ba59] text-white transition-colors flex items-center justify-center shadow-md shadow-[#25D366]/20"
-                          title="WhatsApp direct"
-                        >
-                          <MessageSquare className="w-4 h-4 fill-white" />
-                        </a>
-
                         <button
                           onClick={() => order.id && deleteOrder(order.id)}
-                          className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-900/60 hover:bg-rose-950/20 transition-all flex items-center gap-1.5 text-xs font-semibold"
+                          className="p-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-900/60 hover:bg-rose-950/20 transition-all cursor-pointer"
                           title={isAr ? 'حذف هذا التسجيل نهائياً من السجل' : 'Supprimer'}
                         >
-                          <Trash2 className="w-3.5 h-3.5 text-rose-400" />
-                          <span>{isAr ? 'حذف' : 'Supprimer'}</span>
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
 
-                    {/* Admin Notes */}
-                    <div className="mt-3 pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs">
+                    {/* Dedicated Customer Information & Direct Contact Hub */}
+                    <div className="p-4 rounded-2xl bg-slate-950/80 border border-amber-500/20 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                            <User className="w-4 h-4" />
+                          </div>
+                          <div>
+                            <span className="text-sm font-extrabold text-white block">{order.fullName}</span>
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                              <span>{order.statusEducation}</span>
+                              <span>•</span>
+                              <span className="text-amber-400 font-medium flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {order.wilaya}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Copy Entire Customer File Button */}
+                        <button
+                          onClick={() => handleCopyText(fullClientDossier, 'all_' + order.id, 'تم نسخ كامل معلومات العميل بنجاح! ✅')}
+                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-850 border border-amber-500/40 text-amber-400 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm active:scale-95"
+                          title="نسخ جميع بيانات العميل دفعة واحدة للإرسال"
+                        >
+                          {copiedTextId === 'all_' + order.id ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                          <span>
+                            {copiedTextId === 'all_' + order.id
+                              ? (isAr ? 'تم نسخ كامل الملف!' : 'Fiche copiée !')
+                              : (isAr ? 'نسخ كامل بيانات العميل 📋' : 'Copier fiche client 📋')}
+                          </span>
+                        </button>
+                      </div>
+
+                      {/* Direct Phone & Email Action Bars */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 pt-1">
+                        {/* Phone Contact Box */}
+                        <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-md bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                              <PhoneCall className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[10px] text-slate-400 block">{isAr ? 'رقم الهاتف (10 أرقام):' : 'Tél (10 chiffres) :'}</span>
+                              <span dir="ltr" className="font-mono font-bold text-amber-400 text-xs sm:text-sm tracking-wide block truncate">
+                                {order.phone}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Direct Call */}
+                            <a
+                              href={`tel:${order.phone}`}
+                              className="px-2.5 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-black text-xs hover:bg-amber-400 transition-colors flex items-center gap-1 shadow-sm"
+                              title={`اتصال مباشر برقم ${order.phone}`}
+                            >
+                              <PhoneCall className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">{isAr ? 'اتصال' : 'Appel'}</span>
+                            </a>
+
+                            {/* WhatsApp Direct */}
+                            <a
+                              href={`https://wa.me/${algerianIntPhone}?text=${encodeURIComponent(
+                                `السلام عليكم أخي ${order.fullName}، معك إدارة GC58 FORMATIONS بخصوص طلبك للقسيمة #${voucherCode} لدورات: ${order.courseNames}. هل أنت متاح للتأكيد ؟`
+                              )}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="p-1.5 sm:px-2.5 sm:py-1.5 rounded-lg bg-[#25D366] hover:bg-[#20ba59] text-white font-bold text-xs transition-colors flex items-center gap-1 shadow-sm"
+                              title="مراسلة عبر واتساب"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5 fill-white" />
+                              <span className="hidden sm:inline">WhatsApp</span>
+                            </a>
+
+                            {/* Copy Phone */}
+                            <button
+                              onClick={() => handleCopyText(order.phone, 'phone_' + order.id, 'تم نسخ رقم الهاتف!')}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                              title="نسخ رقم الهاتف"
+                            >
+                              {copiedTextId === 'phone_' + order.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Email Contact Box */}
+                        <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="w-6 h-6 rounded-md bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                              <Mail className="w-3.5 h-3.5" />
+                            </div>
+                            <div className="min-w-0">
+                              <span className="text-[10px] text-slate-400 block">{isAr ? 'البريد الإلكتروني:' : 'Email :'}</span>
+                              <span dir="ltr" className="font-semibold text-slate-200 text-xs block truncate" title={order.email}>
+                                {order.email}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Mailto */}
+                            <a
+                              href={`mailto:${order.email}?subject=${encodeURIComponent(`GC58 FORMATIONS - تأكيد التسجيل #${voucherCode}`)}&body=${encodeURIComponent(
+                                `السلام عليكم ${order.fullName}،\n\nشكراً لتسجيلك في GC58 FORMATIONS لدورات:\n${order.courseNames}\n\nرقم القسيمة: #${voucherCode}\nالمجموع المطلوب: ${order.totalAmount} دج.\n\nيسعدنا تواصلك معنا لإتمام الإجراءات وإرسال روابط التحميل والدورات.\n\nإدارة GC58 FORMATIONS\nالهاتف: ${sitePhone}`
+                              )}`}
+                              className="px-2.5 py-1.5 rounded-lg bg-blue-600/25 hover:bg-blue-600/40 text-blue-300 border border-blue-500/30 text-xs font-bold transition-colors flex items-center gap-1"
+                              title={`إرسال بريد إلكتروني إلى ${order.email}`}
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">{isAr ? 'إرسال إيميل' : 'Email'}</span>
+                            </a>
+
+                            {/* Copy Email */}
+                            <button
+                              onClick={() => handleCopyText(order.email, 'email_' + order.id, 'تم نسخ البريد الإلكتروني!')}
+                              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+                              title="نسخ البريد الإلكتروني"
+                            >
+                              {copiedTextId === 'email_' + order.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {order.notes && (
+                        <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200">
+                          <strong className="text-amber-300 font-bold">{isAr ? 'ملاحظة العميل المسجلة: ' : 'Remarque du client : '}</strong>
+                          <span>{order.notes}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Courses & Financial Breakdown: Admin Base Price, Deduction, and Net Total */}
+                    <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="text-xs text-slate-300 font-medium flex items-start gap-1.5">
+                          <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                          <span><strong className="text-slate-200">{isAr ? 'الدورات المسجلة: ' : 'Formations : '}</strong>{order.courseNames}</span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                          <span className="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 font-bold">
+                            📋 {isAr ? 'تسجيل مباشر بقسيمة' : 'Inscription directe'}
+                          </span>
+                          {order.paymentMethod && (
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 font-bold">
+                              💳 {order.paymentMethod === 'baridimob' ? 'بريدي موب' : 'حساب CCP'}
+                            </span>
+                          )}
+                          {order.receiptUrl && (
+                            <button
+                              onClick={() => {
+                                setViewingReceiptUrl(order.receiptUrl || null);
+                                setViewingReceiptOrder(order);
+                              }}
+                              className="px-2.5 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                              title="عرض صورة وصل التحويل المرفقة"
+                            >
+                              <Image className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{isAr ? 'عرض الوصل (📷)' : 'Voir le reçu (📷)'}</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Pricing Breakdown */}
+                      <div className="text-right shrink-0 bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                        {order.discountAmount && order.discountAmount > 0 ? (
+                          <div>
+                            <div className="flex items-center justify-end gap-1 text-[10px] font-mono text-slate-500">
+                              <span className="line-through">
+                                {(order.originalAmount || order.totalAmount + order.discountAmount).toLocaleString()} دج
+                              </span>
+                              <span className="text-[9px] text-slate-500">({isAr ? 'سعر الأدمن' : 'Initial'})</span>
+                            </div>
+                            <span className="text-[10px] text-emerald-400 font-bold block font-mono">
+                              ✂️ {isAr ? `وش نقصتلو المنصة` : `Remise`} (-{order.memberDiscountPercent || 10}%): -{order.discountAmount.toLocaleString()} دج
+                            </span>
+                            <div className="text-base sm:text-lg font-black text-amber-400 font-mono">
+                              <span dir="ltr" className="font-mono inline-block">{order.totalAmount.toLocaleString()}</span>{' '}
+                              <span className="text-xs text-slate-400">دج صافي</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-base sm:text-lg font-black text-amber-400 font-mono">
+                            <span dir="ltr" className="font-mono inline-block">{order.totalAmount.toLocaleString()}</span>{' '}
+                            <span className="text-xs text-slate-400">دج</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Admin Follow-Up Notes */}
+                    <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
                       {isEditingNotes ? (
                         <div className="flex-1 flex items-center gap-2">
                           <input
@@ -985,14 +1167,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           />
                           <button
                             onClick={() => order.id && saveNotes(order.id)}
-                            className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center gap-1 text-xs"
+                            className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold flex items-center gap-1 text-xs cursor-pointer"
                           >
                             <Save className="w-3.5 h-3.5" />
                             <span>{isAr ? 'حفظ' : 'Sauvegarder'}</span>
                           </button>
                           <button
                             onClick={() => setEditingNotesId(null)}
-                            className="px-2 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white text-xs"
+                            className="px-2 py-1.5 rounded-lg bg-slate-800 text-slate-400 hover:text-white text-xs cursor-pointer"
                           >
                             {isAr ? 'إلغاء' : 'Annuler'}
                           </button>
@@ -1002,10 +1184,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <span className="text-[11px] text-slate-500 italic">
                             {order.notes ? (
                               <>
-                                <span className="text-amber-400/90 font-semibold">{isAr ? 'ملاحظة الأدمين:' : 'Note :'}</span> {order.notes}
+                                <span className="text-amber-400/90 font-semibold">{isAr ? 'ملاحظة الأدمين للمتابعة:' : 'Note suivi :'}</span> {order.notes}
                               </>
                             ) : (
-                              isAr ? 'لا توجد ملاحظة للمكالمة بعد' : 'Aucune note enregistrée'
+                              isAr ? 'لا توجد ملاحظة اتصال مسجلة بعد' : 'Aucune note de suivi'
                             )}
                           </span>
                           <button
@@ -1013,7 +1195,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               setEditingNotesId(order.id || null);
                               setTempNotes(order.notes || '');
                             }}
-                            className="text-[11px] text-slate-400 hover:text-amber-400 flex items-center gap-1 transition-colors"
+                            className="text-[11px] text-slate-400 hover:text-amber-400 flex items-center gap-1 transition-colors cursor-pointer"
                           >
                             <Edit3 className="w-3 h-3" />
                             <span>{isAr ? 'تعديل الملاحظة' : 'Modifier la note'}</span>
@@ -1035,6 +1217,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           language={language}
           orders={orders}
           sitePhone={sitePhone}
+        />
+      )}
+
+      {/* TAB: LIVE BROADCAST NOTIFICATIONS */}
+      {activeTab === 'notifications' && (
+        <AdminNotificationsTab
+          language={language}
+          courses={courses}
+          adminEmail={ADMIN_EMAIL}
         />
       )}
 

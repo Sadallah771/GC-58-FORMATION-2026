@@ -13,15 +13,18 @@ import {
   Copy, 
   FileCheck, 
   Check, 
-  Star 
+  Star,
+  CreditCard,
+  Sparkles
 } from 'lucide-react';
 import { addDoc, collection } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { Course, Language, Registration } from '../types';
+import { Course, Language, Registration, ClientLoyaltyData } from '../types';
 import { COURSES_DATA } from '../data/coursesData';
 import { ALGERIAN_WILAYAS } from '../data/wilayas';
 import { AddReviewModal } from './AddReviewModal';
+import { calculateCartDiscount, getTierNameAr, getTierDiscountPercent } from '../utils/loyaltyHelper';
 
 interface EnrollmentModalProps {
   isOpen: boolean;
@@ -32,6 +35,7 @@ interface EnrollmentModalProps {
   onOpenReviewModal?: (courseId?: string) => void;
   courses?: Course[];
   sitePhone?: string;
+  userLoyalty?: ClientLoyaltyData | null;
 }
 
 export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
@@ -42,6 +46,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   onOrderCompleted,
   courses = COURSES_DATA,
   sitePhone = '0797034244',
+  userLoyalty,
 }) => {
   const { user } = useAuth();
   const isAr = language === 'ar';
@@ -95,20 +100,63 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   };
 
   const selectedCourseObjs = courses.filter((c) => selectedCourses.includes(c.id));
-  const totalAmount = selectedCourseObjs.reduce((acc, c) => acc + c.price, 0);
-  const totalOriginalAmount = selectedCourseObjs.reduce((acc, c) => acc + (c.originalPrice || c.price), 0);
-  const totalSavings = Math.max(0, totalOriginalAmount - totalAmount);
+  const activeTier = userLoyalty?.tier || 'STANDARD';
+  const cartPricing = calculateCartDiscount(
+    selectedCourseObjs.map((c) => c.price),
+    activeTier
+  );
+
+  const originalTotalAmount = cartPricing.originalTotal;
+  const discountAmount = cartPricing.discountAmount;
+  const discountPercent = cartPricing.discountPercent;
+  const netTotalAmount = cartPricing.netTotal;
   const courseNamesSummary = selectedCourseObjs.map((c) => c.title).join(', ');
+
+  const activeMemberId =
+    userLoyalty?.memberId ||
+    `GC58-${(emailInput || phone || 'MEMBER').replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase().padEnd(6, 'X')}`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
-    const cleanPhone = phone.trim().replace(/\s+/g, '');
-    if (cleanPhone.length < 9) {
-      setErrorMsg(isAr ? 'يرجى إدخال رقم هاتف جزائري صحيح للاتصال بك (مثال: 0797034244)' : 'Veuillez saisir un numéro de téléphone valide.');
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    if (cleanPhone.length !== 10) {
+      setErrorMsg(
+        isAr
+          ? `رقم الهاتف يجب أن يتكون من 10 أرقام تماماً (مثال: 0797034244). لقد أدخلت ${cleanPhone.length} أرقام فقط، لا يمكن التسجيل بأقل أو أكثر من 10 أرقام.`
+          : `Le numéro de téléphone doit comporter exactement 10 chiffres (ex: 0797034244). Vous avez saisi ${cleanPhone.length} chiffres.`
+      );
       return;
     }
+    if (!cleanPhone.startsWith('0')) {
+      setErrorMsg(
+        isAr
+          ? 'رقم الهاتف الجزائري يجب أن يبدأ بالرقم 0 (مثال: 0797034244 أو 05 أو 06).'
+          : 'Le numéro de téléphone doit commencer par 0 (ex: 0797034244).'
+      );
+      return;
+    }
+
+    const cleanEmail = emailInput.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!cleanEmail) {
+      setErrorMsg(
+        isAr
+          ? 'البريد الإلكتروني إجباري لتأكيد التسجيل واستلام روابط الدورات وحسابك في المنصة.'
+          : 'L’adresse email est obligatoire pour recevoir vos accès de formation.'
+      );
+      return;
+    }
+    if (!emailRegex.test(cleanEmail)) {
+      setErrorMsg(
+        isAr
+          ? 'يرجى إدخال بريد إلكتروني صالح ومعتمد (مثال: exemple@gmail.com).'
+          : 'Veuillez saisir une adresse email valide (ex: exemple@gmail.com).'
+      );
+      return;
+    }
+
     if (selectedCourses.length === 0) {
       setErrorMsg(isAr ? 'يرجى اختيار دورة واحدة على الأقل' : 'Veuillez sélectionner au moins une formation.');
       return;
@@ -121,12 +169,17 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
     const newRegistration: Registration = {
       fullName: fullName.trim() || (isAr ? 'مهندس / تقني' : 'Ingénieur'),
       phone: cleanPhone,
-      email: emailInput.trim().toLowerCase() || `${cleanPhone}@gc58.dz`,
+      email: cleanEmail,
       wilaya,
       statusEducation,
       courseIds: selectedCourses,
       courseNames: courseNamesSummary,
-      totalAmount,
+      originalAmount: originalTotalAmount,
+      discountAmount,
+      memberTier: activeTier,
+      memberDiscountPercent: discountPercent,
+      memberId: activeMemberId,
+      totalAmount: netTotalAmount,
       status: 'en_attente',
       notes: notes.trim(),
       userId: user?.uid || 'guest_' + Date.now(),
@@ -136,9 +189,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
     };
 
     try {
-      if (emailInput.trim()) {
-        localStorage.setItem('gc58_student_email', emailInput.trim().toLowerCase());
-      }
+      localStorage.setItem('gc58_student_email', cleanEmail);
       const docRef = await addDoc(collection(db, 'registrations'), newRegistration);
       setSubmittedOrder({ ...newRegistration, id: docRef.id });
       setCurrentStep('voucher');
@@ -161,24 +212,35 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
     onClose();
   };
 
-  // WhatsApp Voucher Text
+  // WhatsApp Voucher Text with clear Member Card Discount breakdown (وش نقصتلو)
   const voucherCode = submittedOrder?.voucherCode || (submittedOrder?.id ? `GC58-${submittedOrder.id.slice(0, 6).toUpperCase()}` : 'GC58-2026');
   const algerianIntPhone = sitePhone.replace(/^0/, '213');
+
+  const orderOriginalPrice = (submittedOrder?.originalAmount || originalTotalAmount).toLocaleString();
+  const orderDiscountVal = (submittedOrder?.discountAmount ?? discountAmount).toLocaleString();
+  const orderDiscountPercent = submittedOrder?.memberDiscountPercent ?? discountPercent;
+  const orderNetTotal = (submittedOrder?.totalAmount ?? netTotalAmount).toLocaleString();
+  const orderTierName = getTierNameAr(submittedOrder?.memberTier || activeTier);
+  const orderMemberId = submittedOrder?.memberId || activeMemberId;
 
   const voucherText = submittedOrder
     ? `📋 *قسيمة تسجيل رسمية - GC58 FORMATIONS*
 ----------------------------------------
 🔖 *رقم القسيمة:* #${voucherCode}
-👤 *الاسم:* ${submittedOrder.fullName}
+👤 *الاسم واللقب:* ${submittedOrder.fullName}
 📞 *رقم الهاتف:* ${submittedOrder.phone}
 📧 *البريد:* ${submittedOrder.email}
 📍 *الولاية:* ${submittedOrder.wilaya}
+💳 *بطاقة العضوية:* ${orderTierName} (${orderMemberId})
 ----------------------------------------
 📚 *الدورات المسجلة:*
 ${submittedOrder.courseNames}
-💰 *المجموع:* ${submittedOrder.totalAmount.toLocaleString()} دج
 ----------------------------------------
-السلام عليكم أستاذ، هذه هي قسيمة تسجيلي الرسمية في منصة GC58 FORMATIONS. يرجى تأكيد تسجيلي وإرسال روابط الوصول للدورات التدريبية.`
+💵 *سعر الدورات المعتمد (الأدمن):* ${orderOriginalPrice} دج
+✂️ *ما تم خصمه ببطاقتك (وش نقصتلك المنصة):* -${orderDiscountVal} دج (-${orderDiscountPercent}%)
+💰 *المجموع النهائي الصافي المطلوب:* ${orderNetTotal} دج
+----------------------------------------
+السلام عليكم أستاذ، هذه هي قسيمة تسجيلي الرسمية مع احتساب تخفيض بطاقتي. يرجى تأكيد تسجيلي وإرسال روابط الوصول للدورات التدريبية.`
     : '';
 
   const whatsappOrderUrl = `https://wa.me/${algerianIntPhone}?text=${encodeURIComponent(voucherText)}`;
@@ -305,31 +367,68 @@ ${submittedOrder.courseNames}
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      {isAr ? 'رقم الهاتف (الواتساب)' : 'Numéro de Téléphone (WhatsApp)'} <span className="text-amber-400">*</span>
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-slate-300">
+                        {isAr ? 'رقم الهاتف (الواتساب)' : 'Numéro de Téléphone (WhatsApp)'} <span className="text-amber-400 font-bold">*</span>
+                      </label>
+                      <span
+                        className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded transition-colors ${
+                          phone.length === 10
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            : phone.length > 0
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'text-slate-500'
+                        }`}
+                      >
+                        {phone.length === 10 ? '✓ 10/10' : `${phone.length}/10 ${isAr ? 'أرقام' : 'chiffres'}`}
+                      </span>
+                    </div>
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      pattern="[0-9]{10}"
                       required
                       dir="ltr"
                       value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setPhone(val);
+                      }}
                       placeholder="0797034244"
                       className="w-full py-2.5 px-3.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-mono text-xs sm:text-sm focus:border-amber-500 focus:outline-none text-left"
                     />
+                    <p className="text-[10px] text-slate-400 mt-1 flex items-center justify-between">
+                      <span>{isAr ? 'يجب 10 أرقام تماماً (مثال: 0797034244)' : 'Exactement 10 chiffres (ex: 0797034244)'}</span>
+                      {phone.length > 0 && phone.length < 10 && (
+                        <span className="text-amber-400 font-medium">
+                          {isAr ? `(ناقص ${10 - phone.length} أرقام)` : `(-${10 - phone.length})`}
+                        </span>
+                      )}
+                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
-                      {isAr ? 'البريد الإلكتروني' : 'Email'}
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-semibold text-slate-300">
+                        {isAr ? 'البريد الإلكتروني' : 'Email'} <span className="text-amber-400 font-bold">* ({isAr ? 'إجباري' : 'obligatoire'})</span>
+                      </label>
+                      <span className="text-[10px] text-amber-400/90 font-medium">
+                        {isAr ? 'لاستلام الروابط' : 'Pour les liens'}
+                      </span>
+                    </div>
                     <input
                       type="email"
+                      required
+                      autoComplete="email"
                       value={emailInput}
                       onChange={(e) => setEmailInput(e.target.value)}
                       placeholder="exemple@gmail.com"
                       className="w-full py-2.5 px-3.5 rounded-xl bg-slate-900 border border-slate-800 text-white text-xs sm:text-sm focus:border-amber-500 focus:outline-none"
                     />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {isAr ? 'تأكد من كتابة بريدك بشكل صحيح لإرسال الدورات' : 'Votre email sert à vous envoyer les cours'}
+                    </p>
                   </div>
 
                   <div>
@@ -367,34 +466,54 @@ ${submittedOrder.courseNames}
                 </div>
               </div>
 
-              {/* Total & Submit */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-slate-800">
-                <div>
+              {/* Total & Member Discount Breakdown */}
+              <div className="p-4 rounded-2xl bg-slate-950/90 border border-amber-500/30 space-y-3">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">{isAr ? 'المجموع النهائي بعد التخفيض:' : 'Total net :'}</span>
-                    <span className="text-xl font-black text-amber-400 font-mono" dir="ltr">
-                      {totalAmount.toLocaleString()} DA
+                    <CreditCard className="w-4 h-4 text-amber-400" />
+                    <span className="text-slate-300 font-bold">
+                      {isAr ? `تخفيض بطاقة العضوية (${cartPricing.tierNameAr}):` : `Remise carte (${cartPricing.tierNameFr}) :`}
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">
+                      -{discountPercent}%
                     </span>
                   </div>
-                  {totalSavings > 0 && (
-                    <span className="text-[11px] text-emerald-400 font-bold block mt-0.5">
-                      {isAr ? `وفرت ${totalSavings.toLocaleString()} دج في هذا الطلب!` : `Économie : ${totalSavings.toLocaleString()} DA !`}
-                    </span>
-                  )}
+                  <span className="text-emerald-400 font-bold font-mono">
+                    {isAr ? `وش نقصتلك المنصة: -${discountAmount.toLocaleString()} دج` : `Montant déduit : -${discountAmount.toLocaleString()} DA`}
+                  </span>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full sm:w-auto py-3.5 px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <FileCheck className="w-5 h-5 text-slate-950" />
-                  <span>
-                    {loading
-                      ? (isAr ? 'جاري تأكيد التسجيل واستخراج القسيمة...' : 'Traitement...')
-                      : (isAr ? 'تأكيد التسجيل واستخراج قسيمة الاشتراك 📋' : 'Confirmer & Obtenir le bon 📋')}
-                  </span>
-                </button>
+                <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-xs text-slate-500 line-through font-mono">
+                        {originalTotalAmount.toLocaleString()} دج
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        ({isAr ? 'سعر الأدمن المعتمد' : 'Prix initial'})
+                      </span>
+                    </div>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className="text-xs text-slate-300 font-bold">{isAr ? 'المجموع النهائي بعد التخفيض:' : 'Total net à payer :'}</span>
+                      <span className="text-2xl font-black text-amber-400 font-mono" dir="ltr">
+                        {netTotalAmount.toLocaleString()} DA
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full sm:w-auto py-3.5 px-8 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-sm sm:text-base shadow-xl shadow-amber-500/20 hover:scale-[1.01] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <FileCheck className="w-5 h-5 text-slate-950" />
+                    <span>
+                      {loading
+                        ? (isAr ? 'جاري تأكيد التسجيل واستخراج القسيمة...' : 'Traitement...')
+                        : (isAr ? 'تأكيد التسجيل واستخراج قسيمة الاشتراك 📋' : 'Confirmer & Obtenir le bon 📋')}
+                    </span>
+                  </button>
+                </div>
               </div>
             </form>
           )}
@@ -458,10 +577,10 @@ ${submittedOrder.courseNames}
                     <span className="text-slate-200">{submittedOrder.wilaya}</span>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-slate-400 block mb-1">{isAr ? 'حالة القسيمة:' : 'Statut du bon :'}</span>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-xs">
-                      <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>{isAr ? 'تسجيل مؤكد بقسيمة رسمية ✅' : 'Inscription officielle confirmée ✅'}</span>
+                    <span className="text-slate-400 block mb-1">{isAr ? 'بطاقة العضوية المعتمدة:' : 'Carte d’adhérent :'}</span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-xs">
+                      <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{orderTierName} ({orderMemberId})</span>
                     </span>
                   </div>
                 </div>
@@ -472,14 +591,34 @@ ${submittedOrder.courseNames}
                   <p className="text-white font-bold leading-relaxed">{submittedOrder.courseNames}</p>
                 </div>
 
-                {/* Total */}
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-300">
-                    {isAr ? 'المجموع المطلوب:' : 'Montant total :'}
-                  </span>
-                  <div className="text-2xl font-black text-amber-400">
-                    <span dir="ltr" className="font-mono inline-block">{submittedOrder.totalAmount.toLocaleString()}</span>{' '}
-                    <span className="text-xs text-slate-300">دج / DZD</span>
+                {/* Detailed Price & Member Deduction Breakdown (وش نقصتلو في القسيمة) */}
+                <div className="p-4 rounded-xl bg-slate-900/90 border border-amber-500/30 space-y-2 text-xs">
+                  <div className="flex items-center justify-between text-slate-400">
+                    <span>{isAr ? 'سعر الدورات المعتمد (سعر الأدمن الأصلي):' : 'Prix initial officiel :'}</span>
+                    <span className="line-through font-mono">{orderOriginalPrice} دج</span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-emerald-400 font-bold">
+                    <span className="flex items-center gap-1">
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>{isAr ? `تخفيض بطاقة ${orderTierName} (وش نقصتلك المنصة):` : `Remise carte ${orderTierName} :`}</span>
+                    </span>
+                    <span className="font-mono">-{orderDiscountVal} دج (-{orderDiscountPercent}%)</span>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-black text-amber-400 block">
+                        {isAr ? 'المجموع النهائي المطلوب بالسعر الجديد:' : 'Total net final :'}
+                      </span>
+                      <span className="text-[10px] text-emerald-400">
+                        {isAr ? '✅ مطبق عليه خصم بطاقة العضوية بالكامل' : '✅ Remise appliquée'}
+                      </span>
+                    </div>
+                    <div className="text-2xl font-black text-amber-400">
+                      <span dir="ltr" className="font-mono inline-block">{orderNetTotal}</span>{' '}
+                      <span className="text-xs text-slate-300">دج / DZD</span>
+                    </div>
                   </div>
                 </div>
               </div>
