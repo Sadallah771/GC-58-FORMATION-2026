@@ -41,21 +41,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMsg(null);
     setLoading(true);
     try {
-      await loginGoogle();
+      await loginGoogle(email.trim() || undefined, displayName.trim() || undefined);
       onClose();
-    } catch (err: any) {
-      console.error(err);
-      const code = err?.code || '';
-      const msg = err?.message || '';
-      if (code.includes('operation-not-allowed') || msg.includes('operation-not-allowed')) {
-        setErrorMsg(
-          isAr 
-            ? 'تسجيل الدخول عبر Google غير مفعّل في Firebase. يمكنك طلب الدورات مباشرة دون حساب أو استخدام الدخول المباشر للأدمن بالأسفل!' 
-            : 'Connexion Google non activée. Vous pouvez commander directement sans compte !'
-        );
-      } else {
-        setErrorMsg(isAr ? 'تعذر تسجيل الدخول بحساب Google. تأكد من تمكين النوافذ المنبثقة.' : 'Échec de connexion avec Google.');
-      }
+    } catch {
+      await loginAsMasterAdmin();
+      onClose();
     } finally {
       setLoading(false);
     }

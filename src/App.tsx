@@ -8,20 +8,32 @@ import { EnrollmentModal } from './components/EnrollmentModal';
 import { AdminDashboard } from './components/AdminDashboard';
 import { ReviewsSection } from './components/ReviewsSection';
 import { FloatingWhatsApp } from './components/FloatingWhatsApp';
+import { AddReviewModal } from './components/AddReviewModal';
 import { AuthModal } from './components/AuthModal';
 import { Footer } from './components/Footer';
-import { Course, Language } from './types';
+import { StudentDashboard } from './components/StudentDashboard';
+import { GiftCourseSection } from './components/GiftCourseSection';
+import { GiftCourseModal } from './components/GiftCourseModal';
+import { Course, Language, GiftCourseSettings } from './types';
 import { COURSES_DATA } from './data/coursesData';
-import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { DEFAULT_GIFT_COURSE } from './utils/driveHelper';
+import { collection, onSnapshot, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
+import { useAuth } from './context/AuthContext';
 
 function AppContent() {
+  const { user, isAdmin } = useAuth();
   const [language, setLanguage] = useState<Language>('ar');
-  const [currentView, setCurrentView] = useState<'catalog' | 'admin'>('catalog');
+  const [currentView, setCurrentView] = useState<'catalog' | 'admin' | 'student'>('catalog');
   
   // Dynamic courses that can be edited by Admin
   const [courses, setCourses] = useState<Course[]>(COURSES_DATA);
   const [sitePhone, setSitePhone] = useState<string>('0797034244');
+  
+  // Gift Course state with default civil engineering content
+  const [giftCourse, setGiftCourse] = useState<GiftCourseSettings>(DEFAULT_GIFT_COURSE);
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
+  const [adminInitialTab, setAdminInitialTab] = useState<'analytics' | 'orders' | 'courses' | 'gift' | 'settings'>('analytics');
   
   // Selected courses for enrollment
   const [selectedCourseIds, setSelectedCourseIds] = useState<string[]>([]);
@@ -30,6 +42,7 @@ function AppContent() {
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [enrollPreselectedIds, setEnrollPreselectedIds] = useState<string[]>([]);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
 
   // Sync HTML dir with selected language
   useEffect(() => {
@@ -64,11 +77,36 @@ function AppContent() {
         }
       }).catch(() => {});
 
-      return () => unsub();
+      // Load gift course settings
+      const unsubGift = onSnapshot(doc(db, 'site_settings', 'gift_course'), (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as Partial<GiftCourseSettings>;
+          setGiftCourse((prev) => ({
+            ...prev,
+            ...data,
+            episodes: Array.isArray(data.episodes) && data.episodes.length > 0 ? data.episodes : prev.episodes,
+          }));
+        }
+      });
+
+      return () => {
+        unsub();
+        unsubGift();
+      };
     } catch (e) {
       console.warn('Firestore real-time sync info:', e);
     }
   }, []);
+
+  const handleSaveGiftCourse = async (updated: GiftCourseSettings) => {
+    setGiftCourse(updated);
+    try {
+      await setDoc(doc(db, 'site_settings', 'gift_course'), updated, { merge: true });
+    } catch (err) {
+      console.error('Failed to save gift course in Firestore:', err);
+      throw err;
+    }
+  };
 
   const toggleSelectCourse = (courseId: string) => {
     if (selectedCourseIds.includes(courseId)) {
@@ -110,6 +148,7 @@ function AppContent() {
         currentView={currentView}
         setCurrentView={setCurrentView}
         sitePhone={sitePhone}
+        onOpenGiftModal={() => setIsGiftModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -126,6 +165,21 @@ function AppContent() {
               sitePhone={sitePhone}
             />
 
+            {/* Exclusive Site Gift Section (Google Drive Free Course) */}
+            <GiftCourseSection
+              language={language}
+              giftCourse={giftCourse}
+              sitePhone={sitePhone}
+              onOpenGiftModal={() => setIsGiftModalOpen(true)}
+              isAdmin={isAdmin}
+              onOpenAdminGiftTab={() => {
+                setAdminInitialTab('gift');
+                setCurrentView('admin');
+              }}
+              user={user}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+            />
+
             <CourseCatalog
               language={language}
               courses={courses}
@@ -136,7 +190,7 @@ function AppContent() {
 
             <ReviewsSection
               language={language}
-              onOpenEvaluateModal={handleOpenCartOrEnroll}
+              onOpenEvaluateModal={() => setIsReviewModalOpen(true)}
             />
           </>
         )}
@@ -150,6 +204,20 @@ function AppContent() {
             onUpdateSitePhone={(newP) => setSitePhone(newP)}
             onCloseAdmin={() => setCurrentView('catalog')}
             onOpenAuth={() => setIsAuthModalOpen(true)}
+            giftCourse={giftCourse}
+            onSaveGiftCourse={handleSaveGiftCourse}
+            initialTab={adminInitialTab}
+          />
+        )}
+
+        {currentView === 'student' && (
+          <StudentDashboard
+            language={language}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onOpenEnroll={handleOpenCartOrEnroll}
+            sitePhone={sitePhone}
+            onOpenGiftModal={() => setIsGiftModalOpen(true)}
+            giftCourse={giftCourse}
           />
         )}
       </main>
@@ -182,6 +250,25 @@ function AppContent() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         language={language}
+      />
+
+      <AddReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        language={language}
+        courses={courses}
+      />
+
+      {/* Gift Course Video Player Modal (Free & Code-Gated) */}
+      <GiftCourseModal
+        isOpen={isGiftModalOpen}
+        onClose={() => setIsGiftModalOpen(false)}
+        language={language}
+        giftCourse={giftCourse}
+        sitePhone={sitePhone}
+        isAdmin={isAdmin}
+        user={user}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
       />
     </div>
   );

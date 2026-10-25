@@ -25,7 +25,12 @@ import {
   TrendingUp,
   MapPin,
   FileCheck,
-  LogIn
+  LogIn,
+  X,
+  ExternalLink,
+  Gift,
+  Crown,
+  CreditCard
 } from 'lucide-react';
 import { 
   collection, 
@@ -33,14 +38,17 @@ import {
   doc, 
   updateDoc, 
   deleteDoc, 
-  setDoc,
+  setDoc, 
   query, 
   orderBy 
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType, ADMIN_EMAIL } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { Course, Language, Registration, RegistrationStatus } from '../types';
+import { Course, Language, Registration, RegistrationStatus, GiftCourseSettings } from '../types';
 import { COURSES_DATA } from '../data/coursesData';
+import { AdminGiftManager } from './AdminGiftManager';
+import { AdminMembersManager } from './AdminMembersManager';
+import { calculateClientLoyalty, aggregateClientsLoyalty } from '../utils/loyaltyHelper';
 
 interface AdminDashboardProps {
   language: Language;
@@ -50,6 +58,9 @@ interface AdminDashboardProps {
   onUpdateSitePhone: (newPhone: string) => void;
   onCloseAdmin: () => void;
   onOpenAuth: () => void;
+  giftCourse: GiftCourseSettings;
+  onSaveGiftCourse: (updated: GiftCourseSettings) => Promise<void>;
+  initialTab?: 'analytics' | 'orders' | 'members' | 'courses' | 'gift' | 'settings';
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
@@ -60,11 +71,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateSitePhone,
   onCloseAdmin,
   onOpenAuth,
+  giftCourse,
+  onSaveGiftCourse,
+  initialTab,
 }) => {
   const { user, isAdmin, isMasterAdmin, loginGoogle, loginAsMasterAdmin } = useAuth();
   const isAr = language === 'ar';
 
-  const [activeTab, setActiveTab] = useState<'analytics' | 'orders' | 'courses' | 'settings'>('analytics');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'orders' | 'members' | 'courses' | 'gift' | 'settings'>(initialTab || 'analytics');
   const [orders, setOrders] = useState<Registration[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +92,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [photoModalCourse, setPhotoModalCourse] = useState<Course | null>(null);
   const [newPhotoUrl, setNewPhotoUrl] = useState<string>('');
   const [newPhoneInput, setNewPhoneInput] = useState(sitePhone);
+
+  // Receipt modal viewer state
+  const [viewingReceiptUrl, setViewingReceiptUrl] = useState<string | null>(null);
+  const [viewingReceiptOrder, setViewingReceiptOrder] = useState<Registration | null>(null);
 
   // Real-time Firestore sync for registrations
   useEffect(() => {
@@ -349,31 +367,100 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     showNotification(isAr ? `تم تحديث رقم الهاتف والواتساب إلى ${cleanPhone}` : `Numéro mis à jour : ${cleanPhone}`);
   };
 
-  const exportToCSV = () => {
-    if (orders.length === 0) return;
-    const headers = ['ID', 'Nom & Prénom', 'Téléphone', 'Email', 'Wilaya', 'Statut Étudiant', 'Formations', 'Montant (DZD)', 'Statut', 'Date', 'Notes'];
-    const rows = orders.map((o) => [
-      o.id || '',
-      `"${o.fullName}"`,
-      `"${o.phone}"`,
-      `"${o.email}"`,
-      `"${o.wilaya}"`,
-      `"${o.statusEducation}"`,
-      `"${o.courseNames.replace(/"/g, '""')}"`,
-      o.totalAmount,
-      o.status,
-      o.createdAt,
-      `"${(o.notes || '').replace(/"/g, '""')}"`,
-    ]);
+  // Professional Excel Export for Registrations
+  const exportToExcel = () => {
+    if (orders.length === 0) {
+      showNotification(isAr ? 'لا توجد طلبات لتصديرها حالياً' : 'Aucune commande à exporter');
+      return;
+    }
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const tableRows = orders.map((o, idx) => {
+      const formattedDate = o.createdAt ? new Date(o.createdAt).toLocaleString('fr-FR') : '';
+      const statusLabel = 
+        o.status === 'paye' ? 'تم الدفع (Payé)' :
+        o.status === 'confirme' ? 'مؤكد (Confirmé)' :
+        o.status === 'appele' ? 'تم الاتصال (Appelé)' :
+        o.status === 'annule' ? 'ملغى (Annulé)' : 'في الانتظار (En attente)';
+      const payMethod = o.paymentMethod ? (o.paymentMethod === 'baridimob' ? 'بريدي موب' : 'حساب CCP') : 'تسجيل مباشر (قسيمة)';
+      const hasReceipt = o.receiptUrl ? 'نعم (مرفق ✅)' : 'بدون وصل';
+      const voucher = o.voucherCode || (o.id ? `GC58-${o.id.slice(0, 6).toUpperCase()}` : `GC58-${idx + 1}`);
+
+      return `
+        <tr>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: bold; background-color: #f8fafc;">${voucher}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">${formattedDate}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; font-weight: bold;">${o.fullName}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; mso-number-format:'\\@'; font-family: monospace;">${o.phone}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px;">${o.email}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">${o.wilaya}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px;">${o.courseNames}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: right; font-weight: bold; color: #b45309;">${o.totalAmount.toLocaleString()} DZD</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center;">${payMethod}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; color: ${o.receiptUrl ? '#15803d' : '#64748b'}; font-weight: bold;">${hasReceipt}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px; text-align: center; font-weight: bold;">${statusLabel}</td>
+          <td style="border: 1px solid #cbd5e1; padding: 8px;">${o.notes || ''}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const excelHtml = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Inscriptions GC58</x:Name>
+                <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+        <style>
+          th { background-color: #0f172a; color: #f59e0b; font-weight: bold; padding: 10px; border: 1px solid #334155; }
+        </style>
+      </head>
+      <body>
+        <h2 style="color: #0f172a; font-family: Arial, sans-serif;">GC58 FORMATIONS - سجل المسجلين والطلبات (${dateStr})</h2>
+        <table style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 13px;">
+          <thead>
+            <tr>
+              <th>رمز القسيمة (Code Bon)</th>
+              <th>تاريخ التسجيل (Date)</th>
+              <th>الاسم واللقب (Nom & Prénom)</th>
+              <th>رقم الهاتف (Téléphone)</th>
+              <th>البريد الإلكتروني (Email)</th>
+              <th>الولاية (Wilaya)</th>
+              <th>الدورات المختارة (Formations)</th>
+              <th>المبلغ الإجمالي (Montant DZD)</th>
+              <th>طريقة الدفع (Mode de Paiement)</th>
+              <th>وصل التحويل (Reçu)</th>
+              <th>الحالة (Statut)</th>
+              <th>ملاحظات الأدمين (Notes)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\uFEFF' + excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `commandes_dz_genie_civil_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.href = url;
+    link.download = `GC58_FORMATIONS_Inscriptions_${dateStr}.xls`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showNotification(isAr ? 'تم تصدير ملف الإكسل الاحترافي بنجاح!' : 'Fichier Excel exporté avec succès !');
   };
 
   // KPIs
@@ -487,6 +574,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </button>
 
         <button
+          onClick={() => setActiveTab('members')}
+          className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'members'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Crown className="w-4 h-4 text-amber-400" />
+          <span>{isAr ? 'الأعضاء والبطاقات (Niveaux VIP)' : 'Membres & Cartes VIP'}</span>
+          <span className="px-1.5 py-0.5 rounded-md bg-slate-950 text-amber-400 text-[10px] font-mono font-bold border border-amber-500/30">
+            {aggregateClientsLoyalty(orders).length}
+          </span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('courses')}
           className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
             activeTab === 'courses'
@@ -496,6 +598,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         >
           <Edit3 className="w-4 h-4" />
           <span>{isAr ? `تعديل الدورات والأسعار والصور (${courses.length})` : `Éditer Cours, Prix & Photos (${courses.length})`}</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('gift')}
+          className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 ${
+            activeTab === 'gift'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Gift className="w-4 h-4" />
+          <span>{isAr ? 'هدية الموقع (Google Drive)' : 'Cadeau & Google Drive'}</span>
         </button>
 
         <button
@@ -663,12 +777,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
 
               <button
-                onClick={exportToCSV}
-                className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-md shadow-emerald-600/20"
-                title="تصدير إلى ملف إكسل"
+                onClick={exportToExcel}
+                className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-md shadow-emerald-600/20 transition-all hover:scale-105 active:scale-95"
+                title="تصدير السجل الكامل إلى ملف إكسل احترافي منسق"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>CSV</span>
+                <span>{isAr ? 'تصدير Excel (احترافي)' : 'Exporter Excel'}</span>
               </button>
             </div>
           </div>
@@ -692,6 +806,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 const isEditingNotes = editingNotesId === order.id;
                 const algerianIntPhone = order.phone.replace(/^0/, '213');
                 const voucherCode = order.id ? `GC-${order.id.slice(0, 6).toUpperCase()}` : 'GC-2026';
+                const clientLoyalty = calculateClientLoyalty(orders, order.email, order.phone);
 
                 return (
                   <div
@@ -716,11 +831,63 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           <span className="px-2 py-0.5 rounded text-[10px] font-mono text-amber-400 bg-amber-500/10">
                             {order.wilaya}
                           </span>
+
+                          {/* Client Loyalty Badge */}
+                          {clientLoyalty.tier === 'GOLDEN' ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 shadow-sm flex items-center gap-1">
+                              👑 GOLDEN ({clientLoyalty.paidCoursesCount} دورات)
+                            </span>
+                          ) : clientLoyalty.tier === 'SILVER' ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-slate-200 text-slate-950 shadow-sm flex items-center gap-1">
+                              ★ SILVER ({clientLoyalty.paidCoursesCount} دورات)
+                            </span>
+                          ) : clientLoyalty.tier === 'PRO' ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-amber-500 text-slate-950 shadow-sm flex items-center gap-1">
+                              ✦ PRO ({clientLoyalty.paidCoursesCount} دورات)
+                            </span>
+                          ) : clientLoyalty.paidCoursesCount > 0 ? (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-800 text-amber-300 border border-slate-700">
+                              {clientLoyalty.paidCoursesCount} مسددة
+                            </span>
+                          ) : null}
+
+                          {clientLoyalty.eligibleForFreeGift && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                              🎁 يستحق دورة مجانية
+                            </span>
+                          )}
                         </div>
 
                         <div className="text-xs text-slate-300 font-medium flex items-start gap-1.5">
                           <Layers className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                           <span>{order.courseNames}</span>
+                        </div>
+
+                        {/* Registration & Status Badges */}
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            📋 {isAr ? 'تسجيل مباشر بقسيمة' : 'Inscription directe'}
+                          </span>
+
+                          {order.paymentMethod && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                              💳 {order.paymentMethod === 'baridimob' ? 'بريدي موب' : 'حساب CCP'}
+                            </span>
+                          )}
+
+                          {order.receiptUrl && (
+                            <button
+                              onClick={() => {
+                                setViewingReceiptUrl(order.receiptUrl || null);
+                                setViewingReceiptOrder(order);
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[11px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                              title="عرض صورة وصل التحويل المرفقة"
+                            >
+                              <Image className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>{isAr ? 'عرض الوصل (📷)' : 'Voir le reçu (📷)'}</span>
+                            </button>
+                          )}
                         </div>
 
                         {order.notes && (
@@ -860,6 +1027,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* TAB: MEMBERS, LOYALTY CARDS & TIERS */}
+      {activeTab === 'members' && (
+        <AdminMembersManager
+          language={language}
+          orders={orders}
+          sitePhone={sitePhone}
+        />
       )}
 
       {/* TAB 3: EDIT COURSES, PRICES & IMAGES */}
@@ -1270,6 +1446,86 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </form>
         </div>
       )}
+
+      {/* TAB 4: GIFT COURSE & GOOGLE DRIVE MANAGEMENT */}
+      {activeTab === 'gift' && (
+        <AdminGiftManager
+          language={language}
+          giftCourse={giftCourse}
+          onSaveGiftCourse={onSaveGiftCourse}
+          sitePhone={sitePhone}
+        />
+      )}
+
+      {/* High-Resolution Receipt Viewer Modal */}
+      {viewingReceiptUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl flex flex-col max-h-[92vh]">
+            <div className="flex items-center justify-between pb-3.5 border-b border-slate-800 mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                  <Image className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-sm sm:text-base">
+                    {isAr ? 'وصل التحويل المرفق' : 'Reçu de paiement'} - {viewingReceiptOrder?.fullName}
+                  </h4>
+                  <p className="text-[11px] text-slate-400">
+                    {viewingReceiptOrder?.paymentMethod === 'baridimob' ? 'بريدي موب (BaridiMob)' : 'حساب CCP'} • {viewingReceiptOrder?.phone}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setViewingReceiptUrl(null);
+                  setViewingReceiptOrder(null);
+                }}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto rounded-2xl bg-slate-950 border border-slate-800/80 p-3 flex items-center justify-center min-h-[300px]">
+              <img
+                src={viewingReceiptUrl}
+                alt="Reçu de virement"
+                className="max-h-[60vh] w-auto max-w-full object-contain rounded-xl shadow-lg"
+              />
+            </div>
+
+            <div className="pt-4 border-t border-slate-800/80 mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="text-xs text-slate-400 font-mono">
+                {viewingReceiptOrder?.totalAmount.toLocaleString()} DZD • {viewingReceiptOrder?.wilaya}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={viewingReceiptUrl}
+                  download={`recu_${viewingReceiptOrder?.phone || 'client'}.jpg`}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>{isAr ? 'تحميل الصورة' : 'Télécharger'}</span>
+                </a>
+
+                <button
+                  onClick={() => {
+                    setViewingReceiptUrl(null);
+                    setViewingReceiptOrder(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold"
+                >
+                  {isAr ? 'إغلاق' : 'Fermer'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 };

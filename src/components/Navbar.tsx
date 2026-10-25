@@ -12,7 +12,11 @@ import {
   X, 
   LogIn, 
   LogOut,
-  User
+  User,
+  Sparkles,
+  Gift,
+  Crown,
+  CreditCard
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_EMAIL } from '../firebase';
@@ -24,9 +28,10 @@ interface NavbarProps {
   selectedCourseIds: string[];
   onOpenCartOrEnroll: () => void;
   onOpenAuth: () => void;
-  currentView: 'catalog' | 'admin';
-  setCurrentView: (view: 'catalog' | 'admin') => void;
+  currentView: 'catalog' | 'admin' | 'student';
+  setCurrentView: (view: 'catalog' | 'admin' | 'student') => void;
   sitePhone: string;
+  onOpenGiftModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -38,6 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentView,
   setCurrentView,
   sitePhone,
+  onOpenGiftModal,
 }) => {
   const { user, isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -113,7 +119,44 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>{isAr ? 'الدورات التدريبية' : 'Formations'}</span>
           </button>
 
-          {/* WhatsApp Button: replacing "ديسكوتي" with "أكمل الطلب عبر الواتساب" */}
+          {/* Gift Course Button (Free & Code-Gated) */}
+          <button
+            onClick={() => {
+              if (!user) {
+                onOpenAuth();
+              } else {
+                onOpenGiftModal();
+              }
+            }}
+            className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-amber-500/20 via-amber-400/20 to-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
+          >
+            <Gift className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+            <span>{isAr ? 'هدية الموقع 🎁' : 'Cadeau Offert 🎁'}</span>
+          </button>
+
+          {/* Loyalty Membership Card Button */}
+          <button
+            onClick={() => {
+              if (!user) {
+                onOpenAuth();
+              } else {
+                setCurrentView(currentView === 'student' ? 'catalog' : 'student');
+              }
+            }}
+            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
+              currentView === 'student'
+                ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+            title="بطاقة العضوية والولاء GC58 PRO"
+          >
+            <Crown className="w-4 h-4 text-amber-400" />
+            <span>{isAr ? 'بطاقتي GC58 PRO' : 'Ma Carte PRO'}</span>
+          </button>
+
+
+
+          {/* WhatsApp Button */}
           <a
             href={whatsappUrl}
             target="_blank"
@@ -164,13 +207,16 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Google Sign-in / User Profile (RESTORED) */}
           {user ? (
             <div className="flex items-center gap-2">
-              <div 
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs max-w-[140px] truncate ${
-                  isAdmin 
-                    ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-300' 
-                    : 'bg-slate-900 border-slate-800 text-slate-300'
+              <button
+                onClick={() => setCurrentView(currentView === 'student' ? 'catalog' : 'student')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs max-w-[150px] truncate transition-all cursor-pointer ${
+                  currentView === 'student'
+                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 ring-1 ring-amber-500/50'
+                    : isAdmin 
+                    ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/40' 
+                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-amber-500/40 hover:text-white'
                 }`}
-                title={user.email || ''}
+                title={isAr ? 'اضغط لفتح بطاقتك وفضائك الشخصي' : 'Cliquez pour ouvrir votre carte'}
               >
                 <div className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0">
                   {user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
@@ -178,7 +224,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="truncate text-[11px] font-semibold">
                   {user.displayName || user.email?.split('@')[0]}
                 </span>
-              </div>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold hidden sm:inline">
+                  PRO
+                </span>
+              </button>
               <button
                 onClick={() => {
                   logout();
@@ -253,6 +302,42 @@ export const Navbar: React.FC<NavbarProps> = ({
             <BookOpen className="w-5 h-5" />
             <span>{isAr ? 'قائمة الدورات التدريبية' : 'Toutes les formations'}</span>
           </button>
+
+          <button
+            onClick={() => {
+              if (!user) {
+                onOpenAuth();
+              } else {
+                onOpenGiftModal();
+              }
+              setMobileMenuOpen(false);
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40"
+          >
+            <Gift className="w-5 h-5 text-amber-400" />
+            <span>{isAr ? 'هدية الموقع (دورة مجانية مشفرة) 🎁' : 'Cadeau du Site 🎁'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              if (!user) {
+                onOpenAuth();
+              } else {
+                setCurrentView('student');
+              }
+              setMobileMenuOpen(false);
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+              currentView === 'student'
+                ? 'bg-amber-500 text-slate-950 font-black'
+                : 'text-slate-300 bg-slate-900 border border-slate-800'
+            }`}
+          >
+            <Crown className="w-5 h-5 text-amber-400" />
+            <span>{isAr ? 'بطاقة العضوية GC58 PRO (سجلي ومكافآتي)' : 'Ma Carte PRO & Récompenses'}</span>
+          </button>
+
+
 
           <a
             href={whatsappUrl}

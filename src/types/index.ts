@@ -58,6 +58,10 @@ export interface Registration {
   status: RegistrationStatus;
   notes?: string;
   userId?: string;
+  receiptUrl?: string; // Base64 or image URL of BaridiMob / CCP transfer receipt
+  receiptFileName?: string;
+  paymentMethod?: 'baridimob' | 'ccp' | 'espece' | 'autre';
+  voucherCode?: string;
   createdAt: string;
   updatedAt?: string;
 }
@@ -84,4 +88,48 @@ export interface StudentProgress {
   lastUpdated: string;
 }
 
+
+
 export type Language = 'ar' | 'fr';
+
+export interface GiftEpisode {
+  id: string;
+  order: number;
+  title: string;
+  duration?: string;
+  driveUrl: string;
+  previewEmbedUrl?: string;
+  description?: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
+}
+
+export interface GiftCourseSettings {
+  isActive: boolean;
+  title: string;
+  subtitle: string;
+  instructorName: string;
+  instructorTitle: string;
+  secretAccessCode: string;
+  driveFolderUrl?: string;
+  thumbnail?: string;
+  totalDuration?: string;
+  badgeText?: string;
+  descriptionAr: string;
+  descriptionFr: string;
+  episodes: GiftEpisode[];
+  updatedAt?: string;
+}
+
+export type LoyaltyTier = 'STANDARD' | 'PRO' | 'SILVER' | 'GOLDEN';
+
+export interface ClientLoyaltyData {
+  tier: LoyaltyTier;
+  paidCoursesCount: number;
+  paidCourseIds: string[];
+  paidCourseNames: string[];
+  nextTierThreshold: number;
+  progressPercent: number;
+  eligibleForFreeGift: boolean;
+  memberId: string;
+}

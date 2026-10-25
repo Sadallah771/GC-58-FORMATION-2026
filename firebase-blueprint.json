@@ -50,6 +50,48 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userName", "courseId", "rating", "comment", "createdAt"]
+    },
+    "AILead": {
+      "title": "AILead",
+      "description": "Client interaction, background, interests, and chat history recorded by GC58 AI",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 100 },
+        "userEmail": { "type": "string", "maxLength": 120 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "wilaya": { "type": "string", "maxLength": 50 },
+        "statusEducation": { "type": "string", "maxLength": 100 },
+        "interests": { "type": "array" },
+        "summary": { "type": "string", "maxLength": 1000 },
+        "lastMessage": { "type": "string", "maxLength": 1000 },
+        "messagesCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userName", "updatedAt"]
+    },
+    "GiftCourseSettings": {
+      "title": "GiftCourseSettings",
+      "description": "Exclusive free site gift course with secret access code and Google Drive episodes",
+      "type": "object",
+      "properties": {
+        "isActive": { "type": "boolean" },
+        "title": { "type": "string", "maxLength": 250 },
+        "subtitle": { "type": "string", "maxLength": 500 },
+        "instructorName": { "type": "string", "maxLength": 100 },
+        "instructorTitle": { "type": "string", "maxLength": 200 },
+        "secretAccessCode": { "type": "string", "maxLength": 50 },
+        "driveFolderUrl": { "type": "string", "maxLength": 500 },
+        "thumbnail": { "type": "string", "maxLength": 500 },
+        "totalDuration": { "type": "string", "maxLength": 50 },
+        "badgeText": { "type": "string", "maxLength": 100 },
+        "descriptionAr": { "type": "string", "maxLength": 1000 },
+        "descriptionFr": { "type": "string", "maxLength": 1000 },
+        "episodes": { "type": "array" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "secretAccessCode", "episodes"]
     }
   },
   "firestore": {
@@ -61,9 +103,17 @@
       "schema": { "$ref": "#/entities/SiteCourse" },
       "description": "Editable courses customized by admin"
     },
+    "/site_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/GiftCourseSettings" },
+      "description": "Global settings and free gift course configuration"
+    },
     "/reviews/{reviewId}": {
       "schema": { "$ref": "#/entities/Review" },
       "description": "Course reviews and student ratings"
+    },
+    "/ai_leads/{leadId}": {
+      "schema": { "$ref": "#/entities/AILead" },
+      "description": "Client interactions and CRM leads captured by GC58 AI"
     }
   }
 }

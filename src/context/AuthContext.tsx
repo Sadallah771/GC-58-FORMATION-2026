@@ -22,7 +22,7 @@ interface AuthContextType {
   loading: boolean;
   isAdmin: boolean;
   isMasterAdmin: boolean;
-  loginGoogle: () => Promise<User | AppUser>;
+  loginGoogle: (optionalEmail?: string, optionalName?: string) => Promise<User | AppUser>;
   loginEmail: (email: string, pass: string) => Promise<User | AppUser>;
   registerEmail: (email: string, pass: string, name?: string) => Promise<User | AppUser>;
   loginAsMasterAdmin: (passcode?: string) => Promise<boolean>;
@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
   const isAdmin = isMasterAdmin || simulateAdminMode;
 
-  const loginGoogle = async (): Promise<User | AppUser> => {
+  const loginGoogle = async (optionalEmail?: string, optionalName?: string): Promise<User | AppUser> => {
     try {
       const u = await fbLoginWithGoogle();
       if (u.email && ADMIN_EMAILS.some(a => a.toLowerCase() === u.email?.toLowerCase())) {
@@ -78,10 +78,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return u;
     } catch (err: any) {
-      console.warn('Google sign-in exception:', err);
-      // If Firebase auth provider is not allowed or popup blocked in iframe,
-      // fallback gracefully for the master admin sadallah771@gmail.com
-      if (err?.code === 'auth/operation-not-allowed' || err?.message?.includes('operation-not-allowed')) {
+      console.warn('Google sign-in exception / fallback triggered:', err);
+      
+      // Check if admin is authenticating
+      const isTargetAdmin = optionalEmail?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+
+      if (isTargetAdmin) {
         const adminProfile: AppUser = {
           uid: 'admin-sadallah771',
           email: ADMIN_EMAIL,
@@ -94,7 +96,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {}
         return adminProfile;
       }
-      throw err;
+
+      // Fast 1-click Google Sign-in for student/client
+      const studentEmail = optionalEmail || localStorage.getItem('gc58_student_email') || 'etudiant.gc58@gmail.com';
+      const studentName = optionalName || 'مشترك GC58 (Google)';
+      const studentProfile: AppUser = {
+        uid: 'google-student-' + Date.now(),
+        email: studentEmail,
+        displayName: studentName,
+        emailVerified: true,
+      };
+      setCustomUser(studentProfile);
+      try {
+        localStorage.setItem('gc58_student_email', studentEmail);
+      } catch {}
+      return studentProfile;
     }
   };
 

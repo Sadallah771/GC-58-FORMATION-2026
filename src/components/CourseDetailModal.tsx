@@ -192,6 +192,11 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
                   </li>
                 ))}
               </ul>
+              <p className="text-[10px] text-amber-400/90 mt-2.5 pt-2 border-t border-slate-800/80 leading-relaxed font-medium">
+                {isAr
+                  ? '⚡ ملاحظة: شيتات الإكسل الحسابية، تحميل ملفات المشاريع ومساعدة العملاء المباشرة تتطلب إكمال 14 دورة (المستوى الذهبي).'
+                  : '⚡ Remarque : Les feuilles de calcul Excel, le téléchargement des fichiers sources et l’assistance client nécessitent 14 formations validées (Niveau Golden).'}
+              </p>
             </div>
 
             <div className="p-4 rounded-xl bg-slate-950/50 border border-slate-800/80">
