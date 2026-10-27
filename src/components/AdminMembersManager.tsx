@@ -366,14 +366,23 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
                         {req.tierRequested === 'STUDENT' ? <GraduationCap className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
                       </div>
                       <div>
-                        <h4 className="font-black text-sm text-white">{req.fullName}</h4>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
-                          req.tierRequested === 'STUDENT'
-                            ? 'bg-emerald-500/15 text-emerald-300'
-                            : 'bg-amber-500/15 text-amber-300'
-                        }`}>
-                          {req.tierRequested === 'STUDENT' ? (isAr ? 'طلب بطاقة طالب جامعي (PRO 20%) 🎓' : 'Carte Étudiant PRO (20%)') : (isAr ? 'طلب بطاقة ستوندار (10%) 💳' : 'Carte Standard (10%)')}
-                        </span>
+                        <h4 className="font-black text-sm text-white">
+                          {req.customCardName ? `${req.customCardName} (${req.fullName})` : req.fullName}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block ${
+                            req.tierRequested === 'STUDENT'
+                              ? 'bg-emerald-500/15 text-emerald-300'
+                              : 'bg-amber-500/15 text-amber-300'
+                          }`}>
+                            {req.tierRequested === 'STUDENT' ? (isAr ? 'طلب بطاقة طالب جامعي (PRO 20%) 🎓' : 'Carte Étudiant PRO (20%)') : (isAr ? 'طلب بطاقة ستوندار (10%) 💳' : 'Carte Standard (10%)')}
+                          </span>
+                          {req.points !== undefined && (
+                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                              ⭐ {req.points} {isAr ? 'نقطة' : 'pts'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -388,12 +397,26 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
                     </span>
                   </div>
 
-                  {req.university && (
-                    <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span className="font-semibold">{req.university}</span>
+                  <div className="space-y-1.5 text-xs text-slate-300">
+                    <div className="flex items-center justify-between text-[11px] p-2 rounded-xl bg-slate-900 border border-slate-800">
+                      <span className="text-slate-400">{isAr ? 'البريد الإلكتروني:' : 'Email :'}</span>
+                      <span className="font-mono text-slate-200">{req.email}</span>
                     </div>
-                  )}
+
+                    {req.customCardName && (
+                      <div className="flex items-center justify-between text-[11px] p-2 rounded-xl bg-slate-900 border border-amber-500/30">
+                        <span className="text-amber-400 font-bold">{isAr ? 'الاسم المعدل على البطاقة:' : 'Nom sur la carte :'}</span>
+                        <span className="font-bold text-white">{req.customCardName}</span>
+                      </div>
+                    )}
+
+                    {req.university && (
+                      <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-center gap-1.5">
+                        <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                        <span className="font-semibold">{req.university}</span>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Student Card Photo Preview */}
                   {req.studentCardImageUrl && (
@@ -422,30 +445,35 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
                   )}
 
                   {/* Direct Contact Bar */}
-                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
-                    <a
-                      href={`tel:${req.phone}`}
-                      className="p-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center gap-1 transition-colors"
-                      title={req.phone}
-                    >
-                      <PhoneCall className="w-3.5 h-3.5" />
-                      <span dir="ltr" className="font-mono">{req.phone}</span>
-                    </a>
+                  {(() => {
+                    const phoneToUse = req.customPhone || req.phone;
+                    return (
+                      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+                        <a
+                          href={`tel:${phoneToUse}`}
+                          className="p-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center gap-1 transition-colors"
+                          title={phoneToUse}
+                        >
+                          <PhoneCall className="w-3.5 h-3.5" />
+                          <span dir="ltr" className="font-mono">{phoneToUse}</span>
+                        </a>
 
-                    <a
-                      href={`https://wa.me/${req.phone.replace(/^0/, '213')}?text=${encodeURIComponent(
-                        isAr
-                          ? `السلام عليكم ${req.fullName}، بخصوص طلب بطاقتك في منصة GC58 FORMATIONS...`
-                          : `Bonjour ${req.fullName}, concernant votre carte GC58...`
-                      )}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="p-2 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-bold text-xs flex items-center justify-center gap-1 transition-colors"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5 fill-[#25D366]" />
-                      <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
-                    </a>
-                  </div>
+                        <a
+                          href={`https://wa.me/${phoneToUse.replace(/^0/, '213')}?text=${encodeURIComponent(
+                            isAr
+                              ? `السلام عليكم ${req.customCardName || req.fullName}، بخصوص طلب بطاقتك في منصة GC58 FORMATIONS...`
+                              : `Bonjour ${req.customCardName || req.fullName}, concernant votre carte GC58...`
+                          )}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="p-2 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-bold text-xs flex items-center justify-center gap-1 transition-colors"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5 fill-[#25D366]" />
+                          <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
+                        </a>
+                      </div>
+                    );
+                  })()}
 
                   {/* Actions Bar */}
                   <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">

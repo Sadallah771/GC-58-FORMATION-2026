@@ -108,11 +108,39 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
         </span>
       </div>
 
-      {/* Active Member Card Discount Banner */}
+      {/* Member Card Status Banner in Catalog */}
       {(() => {
+        const hasCard = Boolean(userLoyalty?.hasActiveCard);
         const activeTier = userLoyalty?.tier || 'STANDARD';
-        const activeTierPercent = getTierDiscountPercent(activeTier);
+        const activeTierPercent = getTierDiscountPercent(activeTier, hasCard);
         const activeTierName = getTierNameAr(activeTier);
+
+        if (!hasCard) {
+          return (
+            <div className="mb-6 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-amber-400 shrink-0 border border-slate-700">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs sm:text-sm font-bold text-white">
+                      {isAr ? 'لم تقم بطلب بطاقة العضوية بعد (أو بانتظار مصادقة الإدارة)' : 'Aucune carte validée'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                      {isAr ? 'متاحة للجميع مجاناً' : 'Gratuite'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                    {isAr
+                      ? 'يمكنك طلب بطاقة ستوندار (10%) أو بطاقة طالب جامعي (20% بمميزات البرو) من حسابك لتطبيق التخفيضات ونقاط الزيارات تلقائياً فور موافقة الأدمين.'
+                      : 'Faites votre demande de carte Standard (10%) ou Étudiant (20%) pour activer vos réductions.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        }
 
         return (
           <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-slate-900 to-amber-500/10 border-2 border-amber-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-lg shadow-amber-500/10">
@@ -125,7 +153,7 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs sm:text-sm font-black text-white">
-                    {isAr ? `تخفيض بطاقة العضوية (${activeTierName}):` : `Remise Carte Adhérent (${activeTier}) :`}
+                    {isAr ? `تخفيض بطاقتك المعتمدة (${activeTierName}):` : `Remise Carte Adhérent (${activeTier}) :`}
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-extrabold text-xs">
                     -{activeTierPercent}% {isAr ? 'مخصومة من كل الأسعار' : 'sur tous les tarifs'}
@@ -231,7 +259,8 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
           const isSelected = selectedCourseIds.includes(course.id);
           const isBA = course.category === 'beton_arme';
           const isMetal = course.category === 'charpente_metallique';
-          const pricing = calculateCourseDiscount(course.price, userLoyalty?.tier || 'STANDARD');
+          const hasCard = Boolean(userLoyalty?.hasActiveCard);
+          const pricing = calculateCourseDiscount(course.price, userLoyalty?.tier || 'STANDARD', hasCard);
 
           return (
             <div
@@ -331,32 +360,50 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
                     </div>
                   </div>
 
-                  {/* High-Clarity Cardholder Pricing Box (وش نقصتلو + السعر الجديد) */}
-                  <div className="p-3 rounded-xl bg-slate-950/90 border border-amber-500/30 mb-4 space-y-1.5 shadow-inner">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400 flex items-center gap-1 font-bold">
-                        <CreditCard className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{isAr ? `تخفيض بطاقة ${pricing.tierNameAr}:` : `Remise ${pricing.tierNameFr} :`}</span>
-                      </span>
-                      <span className="font-extrabold text-emerald-400 font-mono text-[11px] bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
-                        -{pricing.discountPercent}% ({isAr ? `وفرت ${pricing.discountAmount.toLocaleString()} دج` : `-${pricing.discountAmount.toLocaleString()} DA`})
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/80">
-                      <div className="text-[11px] font-mono">
-                        <span className="text-slate-500 line-through block">{pricing.basePrice.toLocaleString()} دج</span>
-                        <span className="text-[9px] text-slate-500">{isAr ? 'سعر الأدمن المعتمد' : 'Prix initial'}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-base font-black text-amber-400 font-mono" dir="ltr">
-                          {pricing.discountedPrice.toLocaleString()} DA
+                  {/* High-Clarity Pricing Box */}
+                  <div className="p-3 rounded-xl bg-slate-950/90 border border-slate-800 mb-4 space-y-1.5 shadow-inner">
+                    {hasCard ? (
+                      <>
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-slate-400 flex items-center gap-1 font-bold">
+                            <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                            <span>{isAr ? `تخفيض بطاقة ${pricing.tierNameAr}:` : `Remise ${pricing.tierNameFr} :`}</span>
+                          </span>
+                          <span className="font-extrabold text-emerald-400 font-mono text-[11px] bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                            -{pricing.discountPercent}% ({isAr ? `وفرت ${pricing.discountAmount.toLocaleString()} دج` : `-${pricing.discountAmount.toLocaleString()} DA`})
+                          </span>
                         </div>
-                        <span className="text-[10px] text-emerald-400 font-bold block">
-                          {isAr ? 'السعر الجديد لحامل البطاقة' : 'Nouveau tarif'}
-                        </span>
+
+                        <div className="flex items-center justify-between pt-1.5 border-t border-slate-800/80">
+                          <div className="text-[11px] font-mono">
+                            <span className="text-slate-500 line-through block">{pricing.basePrice.toLocaleString()} دج</span>
+                            <span className="text-[9px] text-slate-500">{isAr ? 'سعر الأدمن المعتمد' : 'Prix initial'}</span>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-base font-black text-amber-400 font-mono" dir="ltr">
+                              {pricing.discountedPrice.toLocaleString()} DA
+                            </div>
+                            <span className="text-[10px] text-emerald-400 font-bold block">
+                              {isAr ? 'السعر الجديد لحامل البطاقة' : 'Nouveau tarif'}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-semibold">
+                            {isAr ? 'سعر الدورة المعتمد' : 'Tarif officiel'}
+                          </span>
+                          <span className="text-[10px] text-amber-400 font-medium">
+                            {isAr ? '💡 احصل على تخفيض عند طلب بطاقة' : 'Remise avec carte'}
+                          </span>
+                        </div>
+                        <div className="text-base font-black text-white font-mono" dir="ltr">
+                          {course.price.toLocaleString()} DA
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 

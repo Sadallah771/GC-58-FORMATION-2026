@@ -11,6 +11,7 @@ import {
   Sparkles, 
   Send, 
   LogIn, 
+  LogOut,
   Video, 
   FileText,
   AlertCircle,
@@ -43,6 +44,8 @@ interface StudentDashboardProps {
   sitePhone?: string;
   onOpenGiftModal?: () => void;
   giftCourse?: GiftCourseSettings;
+  userPoints?: number;
+  onUpdateCardDetails?: (name: string, phone: string) => Promise<boolean>;
 }
 
 export const StudentDashboard: React.FC<StudentDashboardProps> = ({
@@ -52,8 +55,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   sitePhone = '0797034244',
   onOpenGiftModal,
   giftCourse,
+  userPoints = 0,
+  onUpdateCardDetails,
 }) => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const isAr = language === 'ar';
 
   const [myRegistrations, setMyRegistrations] = useState<Registration[]>([]);
@@ -224,7 +229,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     );
   }
 
-  const userPhone = (user && 'phoneNumber' in user ? String((user as any).phoneNumber) : '') || '';
+  const userPhone = userCardRequest?.customPhone || (user && 'phoneNumber' in user ? String((user as any).phoneNumber) : '') || '';
   const assignedTier = userCardRequest?.tierRequested;
   const isCardApproved = userCardRequest?.status === 'approved';
   const loyalty = calculateClientLoyalty(
@@ -232,7 +237,10 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     user?.email,
     userPhone,
     assignedTier,
-    isCardApproved
+    isCardApproved,
+    userPoints,
+    userCardRequest?.customCardName,
+    userCardRequest?.customPhone
   );
   if (userCardRequest) {
     loyalty.cardStatus = userCardRequest.status;
@@ -240,21 +248,27 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     if (userCardRequest.studentCardImageUrl) {
       loyalty.studentCardImageUrl = userCardRequest.studentCardImageUrl;
     }
+    if (userCardRequest.customCardName) {
+      loyalty.customCardName = userCardRequest.customCardName;
+    }
+    if (userCardRequest.customPhone) {
+      loyalty.customPhone = userCardRequest.customPhone;
+    }
   }
-  const isGolden = loyalty.paidCoursesCount >= 14;
+  const isGolden = loyalty.paidCoursesCount >= 14 || loyalty.tier === 'GOLDEN';
 
   return (
     <div className="py-6 sm:py-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-8 sm:space-y-10 w-full max-w-full overflow-x-hidden">
       {/* Student Welcome Header */}
       <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
             {user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl sm:text-2xl font-black text-white">
-                {user.displayName || user.email?.split('@')[0]}
+                {userCardRequest?.customCardName || user.displayName || user.email?.split('@')[0]}
               </h1>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30">
                 {isAr ? 'حساب مهندس طالب' : 'Compte Étudiant'}
@@ -264,12 +278,27 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         </div>
 
-        <button
-          onClick={onOpenEnroll}
-          className="px-5 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-md shadow-amber-500/15 hover:scale-105 transition-all"
-        >
-          {isAr ? '+ التسجيل في دورة أخرى' : '+ S’inscrire à une nouvelle formation'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={onOpenEnroll}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold text-xs sm:text-sm shadow-md shadow-amber-500/15 hover:scale-105 transition-all cursor-pointer"
+          >
+            {isAr ? '+ التسجيل في دورة أخرى' : '+ S’inscrire à une formation'}
+          </button>
+          
+          <button
+            onClick={async () => {
+              if (window.confirm(isAr ? 'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟' : 'Voulez-vous vraiment vous déconnecter ?')) {
+                await logout();
+              }
+            }}
+            className="px-4 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer"
+            title={isAr ? 'تسجيل الخروج من الحساب' : 'Déconnexion'}
+          >
+            <LogOut className="w-4 h-4 text-rose-400" />
+            <span>{isAr ? 'تسجيل الخروج' : 'Déconnexion'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Official GC58 PRO / SILVER / GOLDEN Loyalty Membership Card */}
@@ -551,6 +580,8 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
             userName={user.displayName || ''}
             existingRequest={userCardRequest}
             onRequestSubmitted={(newReq) => setUserCardRequest(newReq)}
+            onUpdateDetails={onUpdateCardDetails}
+            onOpenAuth={onOpenAuth}
           />
 
           {/* Student Evaluation / Review System */}

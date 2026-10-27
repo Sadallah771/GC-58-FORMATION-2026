@@ -296,7 +296,10 @@ export function calculateClientLoyalty(
   userEmail?: string | null,
   userPhone?: string | null,
   assignedTier?: LoyaltyTier | null,
-  isCardApproved: boolean = true
+  isCardApproved: boolean = false,
+  userPoints: number = 0,
+  customCardName?: string,
+  customPhone?: string
 ): ClientLoyaltyData {
   // Filter confirmed paid orders
   const paidOrders = orders.filter((o) => {
@@ -336,34 +339,75 @@ export function calculateClientLoyalty(
 
   const paidCount = Math.max(uniqueCourseIds.size, uniqueCourseNames.length);
 
-  // Determine Tier:
-  // PRO: 3 courses (unlocks free course)
-  // SILVER: 5 courses
-  // GOLDEN: 14 courses
+  // Check if member already earned Gold or Silver from courses (keep them!)
+  const earnedGoldenFromCourses = paidCount >= 14;
+  const earnedSilverFromCourses = paidCount >= 5;
+  const earnedProFromCourses = paidCount >= 3;
+
+  // Points based upgrades:
+  // PRO in 1000 points, SILVER in 5000 points, GOLDEN in 10000 points
+  const earnedGoldenFromPoints = userPoints >= 10000;
+  const earnedSilverFromPoints = userPoints >= 5000;
+  const earnedProFromPoints = userPoints >= 1000;
+
+  let hasActiveCard = false;
   let tier: LoyaltyTier = 'STANDARD';
   let nextTierThreshold = 3;
   let progressPercent = 0;
 
-  if (paidCount >= 14) {
+  // Determine card ownership & active status:
+  // 1. Existing Gold / Silver earned from courses or high points are kept unconditionally
+  if (earnedGoldenFromCourses || earnedGoldenFromPoints) {
+    hasActiveCard = true;
     tier = 'GOLDEN';
     nextTierThreshold = 14;
     progressPercent = 100;
-  } else if (paidCount >= 5) {
+  } else if (earnedSilverFromCourses || earnedSilverFromPoints) {
+    hasActiveCard = true;
     tier = 'SILVER';
     nextTierThreshold = 14;
     progressPercent = Math.round(((paidCount - 5) / (14 - 5)) * 100);
-  } else if (paidCount >= 3) {
+  } else if (earnedProFromCourses || earnedProFromPoints) {
+    hasActiveCard = true;
     tier = 'PRO';
     nextTierThreshold = 5;
     progressPercent = Math.round(((paidCount - 3) / (5 - 3)) * 100);
-  } else if (assignedTier === 'STUDENT') {
+  } else if (assignedTier === 'STUDENT' && isCardApproved) {
+    hasActiveCard = true;
     tier = 'STUDENT';
     nextTierThreshold = 3;
     progressPercent = Math.round((paidCount / 3) * 100);
-  } else {
+  } else if (assignedTier === 'STANDARD' && isCardApproved) {
+    hasActiveCard = true;
     tier = 'STANDARD';
     nextTierThreshold = 3;
     progressPercent = Math.round((paidCount / 3) * 100);
+  } else {
+    // Has not requested a card or waiting for admin approval:
+    // "البطاقة متمدش و خلاص لازم يدير طلب البطاقة اولا اما ستوندارد او طالب"
+    hasActiveCard = false;
+    tier = assignedTier === 'STUDENT' ? 'STUDENT' : 'STANDARD';
+    nextTierThreshold = 3;
+    progressPercent = Math.round((paidCount / 3) * 100);
+  }
+
+  // Calculate points-based progress and next tier threshold
+  let pointsNextTierThreshold = 1000;
+  let pointsProgressPercent = 0;
+
+  if (tier === 'GOLDEN') {
+    pointsNextTierThreshold = 10000;
+    pointsProgressPercent = 100;
+  } else if (tier === 'SILVER') {
+    pointsNextTierThreshold = 10000;
+    pointsProgressPercent = Math.min(100, Math.max(0, Math.round(((userPoints - 5000) / (10000 - 5000)) * 100)));
+  } else if (tier === 'PRO') {
+    pointsNextTierThreshold = 5000;
+    pointsProgressPercent = Math.min(100, Math.max(0, Math.round(((userPoints - 1000) / (5000 - 1000)) * 100)));
+  } else {
+    // STANDARD or STUDENT
+    pointsNextTierThreshold = 1000;
+    pointsProgressPercent = Math.min(100, Math.max(0, Math.round((userPoints / 1000) * 100)));
   }
 
   // Generate deterministic Member ID
@@ -371,16 +415,22 @@ export function calculateClientLoyalty(
   const shortHash = seed.slice(0, 6).padEnd(6, 'X');
   const memberId = `GC58-${shortHash}`;
 
-  const eligibleForFreeGift = paidCount >= 3;
+  const eligibleForFreeGift = paidCount >= 3 || userPoints >= 1000;
 
   return {
     tier,
-    isCardApproved,
+    hasActiveCard,
+    isCardApproved: hasActiveCard && isCardApproved,
     paidCoursesCount: paidCount,
     paidCourseIds: Array.from(uniqueCourseIds),
     paidCourseNames: uniqueCourseNames,
     nextTierThreshold,
     progressPercent: Math.min(100, Math.max(0, progressPercent)),
+    points: userPoints,
+    pointsNextTierThreshold,
+    pointsProgressPercent,
+    customCardName,
+    customPhone,
     eligibleForFreeGift,
     memberId,
   };
@@ -588,7 +638,8 @@ export function aggregateClientsLoyalty(orders: Registration[]): ClientSummaryWi
  * - Silver: 20%
  * - Golden: 30%
  */
-export function getTierDiscountPercent(tier?: LoyaltyTier | null): number {
+export function getTierDiscountPercent(tier?: LoyaltyTier | null, hasActiveCard: boolean = true): number {
+  if (!hasActiveCard) return 0;
   switch (tier) {
     case 'GOLDEN':
       return 30;
@@ -599,8 +650,9 @@ export function getTierDiscountPercent(tier?: LoyaltyTier | null): number {
     case 'STUDENT':
       return 20; // الطالب عندو مميزات البرو (20%)
     case 'STANDARD':
-    default:
       return 10;
+    default:
+      return 0;
   }
 }
 
@@ -645,8 +697,8 @@ export function getTierNameFr(tier?: LoyaltyTier | null): string {
 /**
  * Calculates discount for a single course price according to member card tier.
  */
-export function calculateCourseDiscount(basePrice: number, tier: LoyaltyTier = 'STANDARD') {
-  const discountPercent = getTierDiscountPercent(tier);
+export function calculateCourseDiscount(basePrice: number, tier: LoyaltyTier = 'STANDARD', hasActiveCard: boolean = true) {
+  const discountPercent = getTierDiscountPercent(tier, hasActiveCard);
   const discountAmount = Math.round((basePrice * discountPercent) / 100);
   const discountedPrice = Math.max(0, basePrice - discountAmount);
 
@@ -656,6 +708,7 @@ export function calculateCourseDiscount(basePrice: number, tier: LoyaltyTier = '
     discountAmount,
     discountedPrice,
     tier,
+    hasActiveCard,
     tierNameAr: getTierNameAr(tier),
     tierNameFr: getTierNameFr(tier),
   };
@@ -664,9 +717,9 @@ export function calculateCourseDiscount(basePrice: number, tier: LoyaltyTier = '
 /**
  * Calculates cart total discount based on all selected courses and the active membership tier.
  */
-export function calculateCartDiscount(coursePrices: number[], tier: LoyaltyTier = 'STANDARD') {
+export function calculateCartDiscount(coursePrices: number[], tier: LoyaltyTier = 'STANDARD', hasActiveCard: boolean = true) {
   const originalTotal = coursePrices.reduce((sum, p) => sum + (p || 0), 0);
-  const discountPercent = getTierDiscountPercent(tier);
+  const discountPercent = getTierDiscountPercent(tier, hasActiveCard);
   const discountAmount = Math.round((originalTotal * discountPercent) / 100);
   const netTotal = Math.max(0, originalTotal - discountAmount);
 
@@ -676,6 +729,7 @@ export function calculateCartDiscount(coursePrices: number[], tier: LoyaltyTier 
     discountAmount,
     netTotal,
     tier,
+    hasActiveCard,
     tierNameAr: getTierNameAr(tier),
     tierNameFr: getTierNameFr(tier),
   };

@@ -426,12 +426,47 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
-          {!user && (
+          {/* User Account & Logout in Mobile Menu */}
+          {user ? (
+            <div className="pt-2 border-t border-slate-800 space-y-2">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 flex items-center justify-center font-black text-sm shrink-0 shadow-md">
+                    {user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">
+                      {user.displayName || user.email?.split('@')[0]}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-mono truncate" dir="ltr">
+                      {user.email}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-amber-500/20 text-amber-300">
+                  {isAdmin ? (isAr ? 'المالك' : 'Admin') : (isAr ? 'عضو' : 'Membre')}
+                </span>
+              </div>
+
+              <button
+                onClick={() => {
+                  logout();
+                  setCurrentView('home');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2.5 px-4 py-3 rounded-xl text-sm font-bold bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/40 text-rose-300 transition-colors cursor-pointer shadow-sm active:scale-98"
+              >
+                <LogOut className="w-4 h-4 text-rose-400" />
+                <span>{isAr ? 'تسجيل الخروج من الحساب 🚪' : 'Se déconnecter'}</span>
+              </button>
+            </div>
+          ) : (
             <button
               onClick={() => { onOpenAuth(); setMobileMenuOpen(false); }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold bg-white text-slate-950 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold bg-white text-slate-950 cursor-pointer shadow-md"
             >
-              <span>{isAr ? 'تسجيل الدخول عبر Google' : 'Connexion Google'}</span>
+              <LogIn className="w-4 h-4 text-slate-950" />
+              <span>{isAr ? 'تسجيل الدخول / إنشاء حساب' : 'Connexion ou Inscription'}</span>
             </button>
           )}
         </div>

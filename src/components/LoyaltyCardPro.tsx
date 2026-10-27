@@ -47,7 +47,7 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
   const theme = getTierTheme(loyalty.tier);
   const currentTierDetails = ALL_TIER_DETAILS[loyalty.tier];
   
-  const [activeTab, setActiveTab] = useState<'card' | 'stamps' | 'perks'>('card');
+  const [activeTab, setActiveTab] = useState<'card' | 'points' | 'stamps' | 'perks'>('card');
   const [showPerksModal, setShowPerksModal] = useState(false);
   const [selectedTierPreview, setSelectedTierPreview] = useState<LoyaltyTier>(loyalty.tier);
 
@@ -77,13 +77,13 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
             {isAr
-              ? 'تُسجل البطاقة تلقائياً كافة الدورات المسددة والمؤكدة من طرف الأدمين وتمنحك ترقيات ومكافآت مجانية.'
-              : 'Votre carte comptabilise vos formations validées par l’administration et débloque vos récompenses.'}
+              ? 'تُسجل البطاقة تلقائياً كافة الدورات المؤكدة ونقاط الزيارات وتمنحك ترقيات ومكافآت مجانية.'
+              : 'Votre carte comptabilise vos formations validées, vos points de visite et débloque vos récompenses.'}
           </p>
         </div>
 
-        {/* View Switcher: Card, Stamps Grid, or Perks List */}
-        <div className="flex items-center gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl self-start sm:self-auto">
+        {/* View Switcher: Card, Points, Stamps Grid, or Perks List */}
+        <div className="flex items-center gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl self-start sm:self-auto flex-wrap">
           <button
             onClick={() => setActiveTab('card')}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
@@ -93,6 +93,19 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
             }`}
           >
             {isAr ? 'البطاقة الفاخرة' : 'La Carte'}
+          </button>
+          <button
+            onClick={() => setActiveTab('points')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+              activeTab === 'points'
+                ? 'bg-amber-500 text-slate-950 shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <span>⭐ {isAr ? 'النقاط' : 'Points'}</span>
+            <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-400 text-[10px] font-mono font-bold">
+              {loyalty.points || 0}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('stamps')}
@@ -116,7 +129,7 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
             }`}
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>{isAr ? 'ميزات المستويات' : 'Avantages'}</span>
+            <span>{isAr ? 'الميزات' : 'Avantages'}</span>
           </button>
         </div>
       </div>
@@ -199,6 +212,18 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
                   </div>
                 </div>
 
+                {/* Active / Inactive Status Banner */}
+                {!loyalty.hasActiveCard && (
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] sm:text-xs font-bold flex items-center gap-1.5 shadow-md">
+                    <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0 animate-spin" />
+                    <span>
+                      {isAr
+                        ? 'البطاقة غير مفعلة - يجب تقديم طلب بطاقة ستوندار أو طالب أولاً والمصادقة عليها من طرف الإدارة'
+                        : 'Carte inactive - Demande de carte requise ou en attente de validation'}
+                    </span>
+                  </div>
+                )}
+
                 {/* Bottom Row: Member Name, ID, & Verification Seal */}
                 <div className="pt-2 border-t border-white/10 flex items-end justify-between gap-2">
                   <div className="space-y-0.5 min-w-0">
@@ -206,7 +231,7 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
                       {isAr ? (loyalty.tier === 'STUDENT' ? 'اسم الطالب الجامعي' : 'اسم المهندس العضو') : 'Titulaire de la Carte'}
                     </span>
                     <h3 className="text-xs sm:text-sm font-black text-white truncate tracking-wide">
-                      {clientName || (loyalty.tier === 'STUDENT' ? 'طالب جامعي مسجل' : 'Ingénieur Étudiant')}
+                      {loyalty.customCardName || clientName || (loyalty.tier === 'STUDENT' ? 'طالب جامعي مسجل' : 'Ingénieur Étudiant')}
                     </h3>
                     <p className="text-[10px] sm:text-[11px] font-mono tracking-widest text-amber-300/90 font-bold truncate">
                       {loyalty.memberId}
@@ -214,20 +239,197 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
                   </div>
 
                   <div className="text-right shrink-0">
-                    {loyalty.isCardApproved === false || loyalty.cardStatus === 'pending' ? (
-                      <div className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-[9px] sm:text-[10px] text-amber-300 font-bold">
-                        <Clock className="w-3 h-3 text-amber-400 animate-spin" />
-                        <span>{isAr ? 'قيد التدقيق الإداري' : 'En attente validation'}</span>
-                      </div>
-                    ) : (
+                    {loyalty.hasActiveCard ? (
                       <div className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-black/40 border border-white/10 text-[9px] sm:text-[10px] text-emerald-300 font-bold">
                         <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-400" />
                         <span>{isAr ? 'مؤكدة رسميـاً' : 'Officiel CTC'}</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-[9px] sm:text-[10px] text-amber-300 font-bold">
+                        <Clock className="w-3 h-3 text-amber-400 animate-spin" />
+                        <span>{isAr ? 'قيد التدقيق الإداري' : 'En attente validation'}</span>
                       </div>
                     )}
                   </div>
                 </div>
 
+              </div>
+            </div>
+          )}
+
+          {/* Points Progress Widget below Card in Card View */}
+          {activeTab === 'card' && (
+            <div className="p-4 sm:p-5 rounded-3xl bg-slate-900 border border-slate-800 space-y-3 shadow-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">⭐</span>
+                  <div>
+                    <span className="text-xs font-bold text-white block">
+                      {isAr ? 'نقاط الدخول والتفاعل بالمنصة' : 'Points de Visites'}
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      {isAr ? 'كل دخلة للموقع تزيدك +1 نقطة وترقيك بالرتب' : '+1 point par visite pour monter en grade'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono font-black text-sm">
+                    {loyalty.points || 0} {isAr ? 'نقطة' : 'pts'}
+                  </span>
+                  <button
+                    onClick={() => setActiveTab('points')}
+                    className="text-xs font-bold text-amber-400 hover:text-amber-300 cursor-pointer hidden sm:inline"
+                  >
+                    {isAr ? 'التفاصيل ⬅️' : 'Détails'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Points Next Tier Milestone */}
+              <div className="space-y-1 pt-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-slate-400">
+                    {loyalty.tier === 'GOLDEN'
+                      ? (isAr ? '👑 بلغت أعلى مرتبة ذهبية VIP بالمنصة!' : 'Niveau maximal atteint !')
+                      : (isAr ? `الهدف القادم بالنقاط: ${loyalty.tier === 'STANDARD' || loyalty.tier === 'STUDENT' ? 'الاحتراف PRO (1000 نقطة)' : loyalty.tier === 'PRO' ? 'الفضية SILVER (5000 نقطة)' : 'الذهبية GOLDEN (10000 نقطة)'}` : 'Prochain palier')}
+                  </span>
+                  <span className="font-mono font-bold text-amber-300">{loyalty.pointsProgressPercent}%</span>
+                </div>
+                <div className="w-full h-2.5 rounded-full bg-slate-950 overflow-hidden border border-slate-800">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(5, loyalty.pointsProgressPercent))}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* DEDICATED POINTS TAB VIEW */}
+          {activeTab === 'points' && (
+            <div className="rounded-3xl p-6 bg-slate-900 border border-slate-800 space-y-6 shadow-xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-lg">
+                    ⭐
+                  </div>
+                  <div>
+                    <h4 className="text-base font-black text-white">
+                      {isAr ? 'نظام نقاط التفاعل وزيارة الموقع' : 'Système de Points de Visites'}
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {isAr ? 'كل دخلة للموقع تمنحك +1 نقطة وترقيك آلياً في رتب البطاقات!' : '+1 point pour chaque visite sur le site !'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-right">
+                  <span className="text-xl sm:text-2xl font-black text-amber-400 font-mono block">
+                    {loyalty.points || 0}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-semibold">{isAr ? 'إجمالي نقاطك' : 'Total points'}</span>
+                </div>
+              </div>
+
+              {/* Points Milestone Ladder */}
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  {isAr ? 'سلم الترقية في الرتب حسب النقاط:' : 'Paliers de montée en grade :'}
+                </span>
+
+                {/* Level 1: PRO (1000 points) */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  (loyalty.points || 0) >= 1000
+                    ? 'bg-amber-500/10 border-amber-500/40 text-amber-300'
+                    : 'bg-slate-950/80 border-slate-800 text-slate-400'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs">
+                        PRO
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white text-xs sm:text-sm">
+                          {isAr ? 'رتبة الاحتراف (GC58 PRO) 🎓' : 'Statut PRO'}
+                        </h5>
+                        <p className="text-[11px] text-slate-400">
+                          {isAr ? 'تخفيض 20% على الدورات + الحصول على الدورة الرابعة مجاناً 100%' : '20% de remise + 4ème cours offert'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-mono font-bold text-amber-400">1 000 {isAr ? 'نقطة' : 'pts'}</span>
+                      <span className={`block text-[10px] font-bold ${
+                        (loyalty.points || 0) >= 1000 ? 'text-emerald-400' : 'text-slate-500'
+                      }`}>
+                        {(loyalty.points || 0) >= 1000 ? (isAr ? 'مفتوحة ومحققة ✅' : 'Débloqué') : (isAr ? `باقي ${Math.max(0, 1000 - (loyalty.points || 0))}` : 'En cours')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Level 2: SILVER (5000 points) */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  (loyalty.points || 0) >= 5000
+                    ? 'bg-slate-200/10 border-slate-300/40 text-slate-200'
+                    : 'bg-slate-950/80 border-slate-800 text-slate-400'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-slate-300/20 text-slate-200 flex items-center justify-center font-bold text-xs">
+                        SILVER
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white text-xs sm:text-sm">
+                          {isAr ? 'رتبة النخبة الفضية (Silver Privilège) 🛡️' : 'Statut Silver'}
+                        </h5>
+                        <p className="text-[11px] text-slate-400">
+                          {isAr ? 'تخفيض 20% + أولوية المراجعة والتدقيق الهندسي لمشاريعك' : '20% de remise + support prioritaire'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-mono font-bold text-slate-300">5 000 {isAr ? 'نقطة' : 'pts'}</span>
+                      <span className={`block text-[10px] font-bold ${
+                        (loyalty.points || 0) >= 5000 ? 'text-emerald-400' : 'text-slate-500'
+                      }`}>
+                        {(loyalty.points || 0) >= 5000 ? (isAr ? 'مفتوحة ومحققة ✅' : 'Débloqué') : (isAr ? `باقي ${Math.max(0, 5000 - (loyalty.points || 0))}` : 'En cours')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Level 3: GOLDEN (10000 points) */}
+                <div className={`p-4 rounded-2xl border transition-all ${
+                  (loyalty.points || 0) >= 10000
+                    ? 'bg-amber-400/15 border-amber-400/50 text-amber-200'
+                    : 'bg-slate-950/80 border-slate-800 text-slate-400'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-black text-xs">
+                        GOLD
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-white text-xs sm:text-sm">
+                          {isAr ? 'رتبة العضوية الذهبية VIP (Golden VIP) 👑' : 'Statut Golden VIP'}
+                        </h5>
+                        <p className="text-[11px] text-slate-400">
+                          {isAr ? 'تخفيض 30% كامل + شيتات إكسل + مساعدة تسطيب البرامج واستشارات المشاريع' : '30% de remise + consulting + support complet'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xs font-mono font-bold text-amber-300">10 000 {isAr ? 'نقطة' : 'pts'}</span>
+                      <span className={`block text-[10px] font-bold ${
+                        (loyalty.points || 0) >= 10000 ? 'text-emerald-400' : 'text-slate-500'
+                      }`}>
+                        {(loyalty.points || 0) >= 10000 ? (isAr ? 'مفتوحة ومحققة ✅' : 'Débloqué') : (isAr ? `باقي ${Math.max(0, 10000 - (loyalty.points || 0))}` : 'En cours')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

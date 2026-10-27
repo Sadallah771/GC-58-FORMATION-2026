@@ -141,6 +141,10 @@ export interface MemberCardRequest {
   university?: string;
   studentCardImageUrl?: string;
   status: CardRequestStatus;
+  customCardName?: string;
+  customPhone?: string;
+  points?: number;
+  lastVisitAt?: string;
   createdAt: string;
   approvedAt?: string;
   adminNote?: string;
@@ -148,6 +152,7 @@ export interface MemberCardRequest {
 
 export interface ClientLoyaltyData {
   tier: LoyaltyTier;
+  hasActiveCard: boolean;
   isCardApproved?: boolean;
   cardStatus?: CardRequestStatus;
   studentCardImageUrl?: string;
@@ -156,6 +161,11 @@ export interface ClientLoyaltyData {
   paidCourseNames: string[];
   nextTierThreshold: number;
   progressPercent: number;
+  points: number;
+  pointsNextTierThreshold: number;
+  pointsProgressPercent: number;
+  customCardName?: string;
+  customPhone?: string;
   eligibleForFreeGift: boolean;
   memberId: string;
 }

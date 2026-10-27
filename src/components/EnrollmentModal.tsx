@@ -100,10 +100,12 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   };
 
   const selectedCourseObjs = courses.filter((c) => selectedCourses.includes(c.id));
+  const hasCard = Boolean(userLoyalty?.hasActiveCard);
   const activeTier = userLoyalty?.tier || 'STANDARD';
   const cartPricing = calculateCartDiscount(
     selectedCourseObjs.map((c) => c.price),
-    activeTier
+    activeTier,
+    hasCard
   );
 
   const originalTotalAmount = cartPricing.originalTotal;

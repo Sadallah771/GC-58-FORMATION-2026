@@ -14,10 +14,13 @@ import {
   Phone,
   Mail,
   User,
-  Building
+  Building,
+  Edit3,
+  Save,
+  LogIn
 } from 'lucide-react';
 import { Language, MemberCardRequest } from '../types';
-import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 interface StudentCardRequestFormProps {
@@ -26,6 +29,8 @@ interface StudentCardRequestFormProps {
   userName: string;
   existingRequest?: MemberCardRequest | null;
   onRequestSubmitted: (req: MemberCardRequest) => void;
+  onOpenAuth?: () => void;
+  onUpdateDetails?: (name: string, phone: string) => Promise<boolean> | Promise<void>;
 }
 
 export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
@@ -34,6 +39,8 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
   userName,
   existingRequest,
   onRequestSubmitted,
+  onOpenAuth,
+  onUpdateDetails,
 }) => {
   const isAr = language === 'ar';
 
@@ -47,6 +54,12 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
+
+  // Editing existing card details (Name on card and phone)
+  const [isEditingCard, setIsEditingCard] = useState(false);
+  const [editName, setEditName] = useState(existingRequest?.customCardName || existingRequest?.fullName || userName || '');
+  const [editPhone, setEditPhone] = useState(existingRequest?.phone || '');
+  const [saveEditSuccess, setSaveEditSuccess] = useState(false);
 
   // Phone validation (exact 10 digits starting with 0)
   const validatePhone = (p: string) => {
@@ -85,6 +98,12 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
     setPhoneError(null);
     setImageError(null);
 
+    if (!userEmail) {
+      alert(isAr ? 'يرجى تسجيل الدخول أولاً بحسابك لطلب البطاقة' : 'Connexion requise');
+      if (onOpenAuth) onOpenAuth();
+      return;
+    }
+
     const cleanPhone = phone.replace(/\s+/g, '');
     if (!validatePhone(cleanPhone)) {
       setPhoneError(isAr ? 'يجب إدخال 10 أرقام صحيحة تبدأ بـ 0 (مثال: 0797034244)' : 'Numéro invalide (10 chiffres).');
@@ -105,6 +124,7 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
     try {
       const newRequest: MemberCardRequest = {
         fullName: fullName.trim(),
+        customCardName: fullName.trim(),
         email: email.trim().toLowerCase(),
         phone: cleanPhone,
         tierRequested: selectedTier,
@@ -131,23 +151,180 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
     }
   };
 
+  const handleUpdateCardDetails = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanPhone = editPhone.replace(/\s+/g, '');
+    if (!validatePhone(cleanPhone)) {
+      alert(isAr ? 'يجب إدخال 10 أرقام صحيحة تبدأ بـ 0' : 'Numéro invalide');
+      return;
+    }
+    if (!editName.trim()) {
+      alert(isAr ? 'يرجى كتابة الاسم الذي تريده على البطاقة' : 'Nom requis');
+      return;
+    }
+
+    try {
+      if (onUpdateDetails) {
+        await onUpdateDetails(editName.trim(), cleanPhone);
+      } else if (existingRequest?.id) {
+        await updateDoc(doc(db, 'card_requests', existingRequest.id), {
+          fullName: editName.trim(),
+          customCardName: editName.trim(),
+          phone: cleanPhone,
+          customPhone: cleanPhone,
+        });
+      }
+
+      const updated = {
+        ...(existingRequest || {}),
+        fullName: editName.trim(),
+        customCardName: editName.trim(),
+        phone: cleanPhone,
+        customPhone: cleanPhone,
+      } as MemberCardRequest;
+
+      try {
+        localStorage.setItem(`gc58_card_request_${userEmail.trim().toLowerCase()}`, JSON.stringify(updated));
+      } catch {}
+
+      onRequestSubmitted(updated);
+      setSaveEditSuccess(true);
+      setIsEditingCard(false);
+      setTimeout(() => setSaveEditSuccess(false), 3000);
+    } catch (err) {
+      console.error('Error updating card details:', err);
+      alert(isAr ? 'حدث خطأ أثناء حفظ التعديلات' : 'Erreur de modification');
+    }
+  };
+
+  // If user is not logged in: must be signed in to request card
+  if (!userEmail) {
+    return (
+      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+          <CreditCard className="w-6 h-6" />
+        </div>
+        <div>
+          <h3 className="text-base font-black text-white">
+            {isAr ? 'طلب بطاقة العضوية الرسمية (طالب أو ستوندار)' : 'Demande de Carte d’Adhérent'}
+          </h3>
+          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+            {isAr
+              ? 'يجب تسجيل الدخول بحسابك أولاً لطلب البطاقة وربطها باسمك وعضويتك ونقاط زياراتك.'
+              : 'Veuillez vous connecter pour faire une demande de carte et la lier à votre compte.'}
+          </p>
+        </div>
+        {onOpenAuth && (
+          <button
+            onClick={onOpenAuth}
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold text-xs inline-flex items-center gap-2 cursor-pointer shadow-md"
+          >
+            <LogIn className="w-4 h-4" />
+            <span>{isAr ? 'تسجيل الدخول لطلب البطاقة' : 'Se connecter'}</span>
+          </button>
+        )}
+      </div>
+    );
+  }
+
   // If already has an approved card
   if (existingRequest?.status === 'approved') {
     return (
-      <div className="p-5 sm:p-6 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
-        <div className="flex items-center gap-2 font-black text-sm sm:text-base">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <span>
-            {isAr 
-              ? `تهانينا! بطاقتك (${existingRequest.tierRequested === 'STUDENT' ? 'طالب جامعي 🎓' : 'Standard 💳'}) مفعلة ومعتمدة رسمياً!` 
-              : 'Votre carte est validée et active !'}
-          </span>
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/90 border border-emerald-500/30 space-y-4">
+        <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
+          <div className="flex items-center gap-2 font-black text-sm sm:text-base">
+            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            <span>
+              {isAr 
+                ? `تهانينا! بطاقتك (${existingRequest.tierRequested === 'STUDENT' ? 'طالب جامعي 🎓' : 'Standard 💳'}) مفعلة ومعتمدة رسمياً!` 
+                : 'Votre carte est validée et active !'}
+            </span>
+          </div>
+          <p className="text-xs text-emerald-200/90 leading-relaxed">
+            {isAr
+              ? `تم التحقق والمصادقة من طرف الأدمين. نسبة التخفيض (${existingRequest.tierRequested === 'STUDENT' ? '20%' : '10%'}) مطبقة تلقائياً على حسابك باسم (${existingRequest.customCardName || existingRequest.fullName}).`
+              : 'Votre statut donne droit aux réductions et avantages exclusifs sur l’ensemble du site.'}
+          </p>
         </div>
-        <p className="text-xs text-emerald-200/90 leading-relaxed">
-          {isAr
-            ? `تم التحقق والمصادقة من طرف الأدمين. نسبة التخفيض (${existingRequest.tierRequested === 'STUDENT' ? '20%' : '10%'}) مطبقة تلقائياً على حسابك (${existingRequest.fullName}).`
-            : 'Votre statut donne droit aux réductions et avantages exclusifs sur l’ensemble du site.'}
-        </p>
+
+        {/* Change Cardholder Name & Phone */}
+        <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <User className="w-4 h-4 text-amber-400" />
+              <span>{isAr ? 'الاسم ورقم الهاتف المسجل على البطاقة:' : 'Coordonnées sur la carte :'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsEditingCard(!isEditingCard)}
+              className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>{isEditingCard ? (isAr ? 'إلغاء التعديل' : 'Annuler') : (isAr ? 'تعديل الاسم أو رقم الهاتف ✏️' : 'Modifier')}</span>
+            </button>
+          </div>
+
+          {!isEditingCard ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-500 block text-[10px]">{isAr ? 'الاسم على البطاقة:' : 'Nom sur la carte :'}</span>
+                <span className="font-bold text-white">{existingRequest.customCardName || existingRequest.fullName}</span>
+              </div>
+              <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800">
+                <span className="text-slate-500 block text-[10px]">{isAr ? 'رقم الهاتف:' : 'Téléphone :'}</span>
+                <span className="font-mono font-bold text-amber-300" dir="ltr">{existingRequest.phone}</span>
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleUpdateCardDetails} className="space-y-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    {isAr ? 'الاسم الجديد على البطاقة:' : 'Nouveau nom sur la carte :'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    {isAr ? 'رقم الهاتف (10 أرقام):' : 'Numéro de téléphone (10 chiffres) :'}
+                  </label>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    dir="ltr"
+                    required
+                    maxLength={10}
+                    placeholder="0797034244"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-amber-300 font-mono text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isAr ? 'حفظ التعديلات على البطاقة' : 'Enregistrer'}</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {saveEditSuccess && (
+            <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{isAr ? 'تم تحديث الاسم ورقم الهاتف على بطاقتك بنجاح!' : 'Coordonnées mises à jour avec succès !'}</span>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -155,25 +332,95 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
   // If request is pending validation by admin
   if (existingRequest?.status === 'pending') {
     return (
-      <div className="p-5 sm:p-7 rounded-3xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-3">
-        <div className="flex items-center gap-2.5 font-black text-sm sm:text-base">
-          <Clock className="w-5 h-5 text-amber-400 animate-spin" />
-          <span>
-            {isAr 
-              ? `طلبك (${existingRequest.tierRequested === 'STUDENT' ? 'بطاقة طالب جامعي 🎓' : 'بطاقة ستوندار 💳'}) قيد التدقيق الإداري والمطابقة` 
-              : 'Demande de carte en cours de validation'}
-          </span>
+      <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/90 border border-amber-500/30 space-y-4">
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-3">
+          <div className="flex items-center gap-2.5 font-black text-sm sm:text-base">
+            <Clock className="w-5 h-5 text-amber-400 animate-spin" />
+            <span>
+              {isAr 
+                ? `طلبك (${existingRequest.tierRequested === 'STUDENT' ? 'بطاقة طالب جامعي 🎓' : 'بطاقة ستوندار 💳'}) قيد التدقيق الإداري والمطابقة` 
+                : 'Demande de carte en cours de validation'}
+            </span>
+          </div>
+          <p className="text-xs text-amber-200/90 leading-relaxed">
+            {isAr
+              ? `لقد تم استلام طلبك بنجاح باسم: "${existingRequest.customCardName || existingRequest.fullName}". الإدارة تقوم بمطابقة الاسم والبيانات. بمجرد موافقة الأدمين، ستصبح البطاقة مفعلة مباشرة في حسابك.`
+              : 'Votre demande est en cours d’examen par l’administration. La carte sera activée dès validation.'}
+          </p>
+          <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+            <span>{isAr ? 'حالة الطلب:' : 'Statut :'}</span>
+            <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold font-mono">
+              {isAr ? 'في انتظار مصادقة الأدمين ⏳' : 'En attente'}
+            </span>
+          </div>
         </div>
-        <p className="text-xs text-amber-200/90 leading-relaxed">
-          {isAr
-            ? `لقد تم استلام طلبك بنجاح باسم: "${existingRequest.fullName}". الإدارة تقوم بمطابقة الاسم مع بطاقة الطالب المرفوعة. بمجرد موافقة الأدمين، ستصبح البطاقة مفعلة مباشرة في حسابك.`
-            : 'Votre demande est en cours d’examen par l’administration. La carte sera activée dès validation.'}
-        </p>
-        <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
-          <span>{isAr ? 'حالة الطلب:' : 'Statut :'}</span>
-          <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold font-mono">
-            {isAr ? 'في انتظار مصادقة الأدمين ⏳' : 'En attente'}
-          </span>
+
+        {/* Edit name & phone even during pending */}
+        <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <User className="w-4 h-4 text-amber-400" />
+              <span>{isAr ? 'تعديل اسمك ورقم هاتفك للبطاقة قبل الاعتماد:' : 'Modifier coordonnées :'}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsEditingCard(!isEditingCard)}
+              className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>{isEditingCard ? (isAr ? 'إلغاء' : 'Annuler') : (isAr ? 'تعديل ✏️' : 'Modifier')}</span>
+            </button>
+          </div>
+
+          {isEditingCard && (
+            <form onSubmit={handleUpdateCardDetails} className="space-y-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    {isAr ? 'الاسم المراد ظهوره على البطاقة:' : 'Nom sur la carte :'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    required
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-300 mb-1">
+                    {isAr ? 'رقم الهاتف (10 أرقام):' : 'Numéro de téléphone :'}
+                  </label>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    dir="ltr"
+                    required
+                    maxLength={10}
+                    placeholder="0797034244"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-amber-300 font-mono text-xs focus:outline-none focus:border-amber-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{isAr ? 'حفظ التعديل' : 'Enregistrer'}</span>
+                </button>
+              </div>
+            </form>
+          )}
+
+          {saveEditSuccess && (
+            <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{isAr ? 'تم تحديث البيانات بنجاح!' : 'Mise à jour réussie !'}</span>
+            </div>
+          )}
         </div>
       </div>
     );

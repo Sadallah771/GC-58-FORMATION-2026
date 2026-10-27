@@ -21,7 +21,7 @@ import { Course, Language, AppView, GiftCourseSettings, Registration, ClientLoya
 import { COURSES_DATA } from './data/coursesData';
 import { DEFAULT_GIFT_COURSE } from './utils/driveHelper';
 import { calculateClientLoyalty } from './utils/loyaltyHelper';
-import { collection, onSnapshot, doc, getDoc, setDoc, query, where } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc, setDoc, updateDoc, query, where } from 'firebase/firestore';
 import { db } from './firebase';
 import { useAuth } from './context/AuthContext';
 
@@ -68,6 +68,17 @@ function AppContent() {
 
   // User confirmed orders & loyalty state
   const [userOrders, setUserOrders] = useState<Registration[]>([]);
+  const [userPoints, setUserPoints] = useState<number>(() => {
+    try {
+      const email = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim();
+      if (email) {
+        const saved = localStorage.getItem(`gc58_points_${email}`);
+        return saved ? parseInt(saved, 10) || 0 : 0;
+      }
+    } catch {}
+    return 0;
+  });
+
   const [userCardRequest, setUserCardRequest] = useState<MemberCardRequest | null>(() => {
     try {
       const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim();
@@ -78,6 +89,53 @@ function AppContent() {
     } catch {}
     return null;
   });
+
+  // Track visit points: awards +1 point for each visit/entry to the site
+  useEffect(() => {
+    const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim();
+    if (!emailToUse) return;
+
+    // One point per app session visit
+    const sessionKey = `gc58_session_visit_counted_${emailToUse}`;
+    if (!sessionStorage.getItem(sessionKey)) {
+      sessionStorage.setItem(sessionKey, 'true');
+
+      const pointDocRef = doc(db, 'user_points', emailToUse);
+      getDoc(pointDocRef)
+        .then((snapshot) => {
+          if (snapshot.exists()) {
+            const currentPts = snapshot.data().points || 0;
+            updateDoc(pointDocRef, {
+              points: currentPts + 1,
+              lastVisitAt: new Date().toISOString(),
+              visitsCount: (snapshot.data().visitsCount || 0) + 1,
+            }).catch(() => {});
+          } else {
+            setDoc(pointDocRef, {
+              email: emailToUse,
+              points: 1,
+              lastVisitAt: new Date().toISOString(),
+              visitsCount: 1,
+              createdAt: new Date().toISOString(),
+            }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Real-time listener on user points
+    const unsubPoints = onSnapshot(doc(db, 'user_points', emailToUse), (snap) => {
+      if (snap.exists()) {
+        const pts = snap.data().points || 0;
+        setUserPoints(pts);
+        try {
+          localStorage.setItem(`gc58_points_${emailToUse}`, pts.toString());
+        } catch {}
+      }
+    });
+
+    return () => unsubPoints();
+  }, [user]);
 
   // Sync real-time card request for the current user/guest email
   useEffect(() => {
@@ -96,6 +154,12 @@ function AppContent() {
           setUserCardRequest(parsed);
           try {
             localStorage.setItem(`gc58_card_request_${emailToUse}`, JSON.stringify(parsed));
+          } catch {}
+        } else {
+          // If no approved/pending request exists in DB, clean local cache so user starts clean
+          setUserCardRequest(null);
+          try {
+            localStorage.removeItem(`gc58_card_request_${emailToUse}`);
           } catch {}
         }
       });
@@ -137,7 +201,20 @@ function AppContent() {
     const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim() || null;
     const assignedTier = userCardRequest?.tierRequested;
     const isApproved = userCardRequest?.status === 'approved';
-    const loy = calculateClientLoyalty(userOrders, emailToUse, null, assignedTier, isApproved);
+    const customName = userCardRequest?.customCardName || userCardRequest?.fullName;
+    const customPhone = userCardRequest?.phone;
+
+    const loy = calculateClientLoyalty(
+      userOrders,
+      emailToUse,
+      customPhone || null,
+      assignedTier,
+      isApproved,
+      userPoints,
+      customName,
+      customPhone
+    );
+
     if (userCardRequest) {
       loy.cardStatus = userCardRequest.status;
       loy.isCardApproved = isApproved;
@@ -146,7 +223,35 @@ function AppContent() {
       }
     }
     return loy;
-  }, [userOrders, user, userCardRequest]);
+  }, [userOrders, user, userCardRequest, userPoints]);
+
+  const handleUpdateCardDetails = async (newName: string, newPhone: string): Promise<boolean> => {
+    const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim();
+    if (!emailToUse) return false;
+
+    if (userCardRequest?.id) {
+      try {
+        await updateDoc(doc(db, 'card_requests', userCardRequest.id), {
+          fullName: newName.trim(),
+          customCardName: newName.trim(),
+          phone: newPhone.trim(),
+          customPhone: newPhone.trim(),
+        });
+        setUserCardRequest((prev) => prev ? {
+          ...prev,
+          fullName: newName.trim(),
+          customCardName: newName.trim(),
+          phone: newPhone.trim(),
+          customPhone: newPhone.trim(),
+        } : null);
+        return true;
+      } catch (err) {
+        console.error('Error updating card details:', err);
+        return false;
+      }
+    }
+    return false;
+  };
 
   // Sync HTML dir with selected language
   useEffect(() => {
@@ -410,6 +515,8 @@ function AppContent() {
               sitePhone={sitePhone}
               onOpenGiftModal={() => setIsGiftModalOpen(true)}
               giftCourse={giftCourse}
+              userPoints={userPoints}
+              onUpdateCardDetails={handleUpdateCardDetails}
             />
           </div>
         )}
