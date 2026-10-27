@@ -128,10 +128,29 @@ export interface GiftCourseSettings {
   updatedAt?: string;
 }
 
-export type LoyaltyTier = 'STANDARD' | 'PRO' | 'SILVER' | 'GOLDEN';
+export type LoyaltyTier = 'STANDARD' | 'STUDENT' | 'PRO' | 'SILVER' | 'GOLDEN';
+
+export type CardRequestStatus = 'pending' | 'approved' | 'rejected';
+
+export interface MemberCardRequest {
+  id?: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  tierRequested: 'STANDARD' | 'STUDENT';
+  university?: string;
+  studentCardImageUrl?: string;
+  status: CardRequestStatus;
+  createdAt: string;
+  approvedAt?: string;
+  adminNote?: string;
+}
 
 export interface ClientLoyaltyData {
   tier: LoyaltyTier;
+  isCardApproved?: boolean;
+  cardStatus?: CardRequestStatus;
+  studentCardImageUrl?: string;
   paidCoursesCount: number;
   paidCourseIds: string[];
   paidCourseNames: string[];

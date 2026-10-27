@@ -17,7 +17,7 @@ import { GiftCourseModal } from './components/GiftCourseModal';
 import { CourseDetailModal } from './components/CourseDetailModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { HomePortalGateways } from './components/HomePortalGateways';
-import { Course, Language, AppView, GiftCourseSettings, Registration, ClientLoyaltyData } from './types';
+import { Course, Language, AppView, GiftCourseSettings, Registration, ClientLoyaltyData, MemberCardRequest } from './types';
 import { COURSES_DATA } from './data/coursesData';
 import { DEFAULT_GIFT_COURSE } from './utils/driveHelper';
 import { calculateClientLoyalty } from './utils/loyaltyHelper';
@@ -68,6 +68,42 @@ function AppContent() {
 
   // User confirmed orders & loyalty state
   const [userOrders, setUserOrders] = useState<Registration[]>([]);
+  const [userCardRequest, setUserCardRequest] = useState<MemberCardRequest | null>(() => {
+    try {
+      const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim();
+      if (emailToUse) {
+        const cached = localStorage.getItem(`gc58_card_request_${emailToUse}`);
+        return cached ? JSON.parse(cached) : null;
+      }
+    } catch {}
+    return null;
+  });
+
+  // Sync real-time card request for the current user/guest email
+  useEffect(() => {
+    const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim();
+    if (!emailToUse) {
+      setUserCardRequest(null);
+      return;
+    }
+
+    try {
+      const q = query(collection(db, 'card_requests'), where('email', '==', emailToUse));
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const docItem = snapshot.docs[0];
+          const parsed = { id: docItem.id, ...(docItem.data() as MemberCardRequest) };
+          setUserCardRequest(parsed);
+          try {
+            localStorage.setItem(`gc58_card_request_${emailToUse}`, JSON.stringify(parsed));
+          } catch {}
+        }
+      });
+      return () => unsub();
+    } catch (err) {
+      console.warn('Card request listener error:', err);
+    }
+  }, [user]);
 
   useEffect(() => {
     const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim();
@@ -99,8 +135,18 @@ function AppContent() {
 
   const userLoyalty = React.useMemo(() => {
     const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim() || null;
-    return calculateClientLoyalty(userOrders, emailToUse, null);
-  }, [userOrders, user]);
+    const assignedTier = userCardRequest?.tierRequested;
+    const isApproved = userCardRequest?.status === 'approved';
+    const loy = calculateClientLoyalty(userOrders, emailToUse, null, assignedTier, isApproved);
+    if (userCardRequest) {
+      loy.cardStatus = userCardRequest.status;
+      loy.isCardApproved = isApproved;
+      if (userCardRequest.studentCardImageUrl) {
+        loy.studentCardImageUrl = userCardRequest.studentCardImageUrl;
+      }
+    }
+    return loy;
+  }, [userOrders, user, userCardRequest]);
 
   // Sync HTML dir with selected language
   useEffect(() => {

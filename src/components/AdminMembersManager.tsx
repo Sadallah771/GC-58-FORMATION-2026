@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Users, 
   Crown, 
@@ -20,9 +20,17 @@ import {
   Eye, 
   X,
   CreditCard,
-  Mail
+  Mail,
+  GraduationCap,
+  Clock,
+  AlertTriangle,
+  Trash2,
+  Check,
+  PhoneCall
 } from 'lucide-react';
-import { Language, Registration, LoyaltyTier } from '../types';
+import { collection, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { Language, Registration, LoyaltyTier, MemberCardRequest } from '../types';
 import { 
   aggregateClientsLoyalty, 
   ClientSummaryWithLoyalty, 
@@ -46,6 +54,68 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState<'all' | LoyaltyTier | 'gift_eligible'>('all');
   const [selectedClient, setSelectedClient] = useState<ClientSummaryWithLoyalty | null>(null);
+
+  // Real-time Card Requests (Student Cards & Standard Cards submitted by users)
+  const [cardRequests, setCardRequests] = useState<MemberCardRequest[]>([]);
+  const [cardFilter, setCardFilter] = useState<'all' | 'pending' | 'approved'>('pending');
+  const [viewingCardImage, setViewingCardImage] = useState<{ url: string; studentName: string } | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const unsub = onSnapshot(collection(db, 'card_requests'), (snapshot) => {
+        const loaded: MemberCardRequest[] = [];
+        snapshot.forEach((d) => {
+          loaded.push({ id: d.id, ...(d.data() as MemberCardRequest) });
+        });
+        loaded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setCardRequests(loaded);
+      });
+      return () => unsub();
+    } catch (e) {
+      console.warn('Card requests listener:', e);
+    }
+  }, []);
+
+  const handleApproveCard = async (reqId: string, studentName: string) => {
+    try {
+      await updateDoc(doc(db, 'card_requests', reqId), {
+        status: 'approved',
+        approvedAt: new Date().toISOString(),
+      });
+      setActionSuccess(isAr ? `تمت المصادقة وتفعيل بطاقة (${studentName}) بنجاح! ✅` : `Carte validée avec succès pour ${studentName} !`);
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err) {
+      console.error('Approve error:', err);
+      alert(isAr ? 'حدث خطأ أثناء المصادقة' : 'Erreur de validation');
+    }
+  };
+
+  const handleRejectCard = async (reqId: string, studentName: string) => {
+    if (!window.confirm(isAr ? `هل أنت متأكد من رفض طلب بطاقة ${studentName}؟` : `Rejeter la demande de ${studentName} ?`)) {
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'card_requests', reqId), {
+        status: 'rejected',
+      });
+      setActionSuccess(isAr ? `تم رفض طلب بطاقة (${studentName})` : `Demande rejetée`);
+      setTimeout(() => setActionSuccess(null), 4000);
+    } catch (err) {
+      console.error('Reject error:', err);
+    }
+  };
+
+  const handleDeleteCardRequest = async (reqId: string) => {
+    if (!window.confirm(isAr ? 'حذف هذا الطلب نهائياً من السجل؟' : 'Supprimer définitivement cette demande ?')) {
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'card_requests', reqId));
+    } catch (err) {
+      console.error('Delete error:', err);
+    }
+  };
 
   // Aggregate all unique clients from all orders
   const allClients = useMemo(() => aggregateClientsLoyalty(orders), [orders]);
@@ -202,8 +272,220 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Top Banner & Stats */}
+    <div className="space-y-8">
+      {actionSuccess && (
+        <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm font-bold flex items-center gap-2 animate-in fade-in">
+          <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400" />
+          <span>{actionSuccess}</span>
+        </div>
+      )}
+
+      {/* SECTION 1: INCOMING STUDENT & STANDARD CARD REQUESTS */}
+      <div className="p-5 sm:p-7 rounded-3xl bg-slate-900 border border-slate-800 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-black mb-1.5">
+              <GraduationCap className="w-4 h-4" />
+              <span>{isAr ? 'طلبات بطاقات الطلاب والأعضاء الواردة' : 'Demandes de Cartes Reçues'}</span>
+              <span className="px-1.5 py-0.2 rounded-full bg-emerald-500 text-slate-950 font-bold text-[10px]">
+                {cardRequests.filter(r => r.status === 'pending').length} {isAr ? 'جديدة' : 'nouvelles'}
+              </span>
+            </div>
+            <h3 className="text-lg sm:text-xl font-black text-white">
+              {isAr ? 'مصادقة وتفعيل بطاقات الطلاب والـ Standard' : 'Validation & Activation des Cartes'}
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {isAr
+                ? 'تحقق من مطابقة اسم الطالب الحقيقي مع صورة بطاقة الطالب الجامعية المرفوعة واضغط "قبول وتفعيل البطاقة".'
+                : 'Vérifiez la concordance du nom réel avec la carte d’étudiant et validez.'}
+            </p>
+          </div>
+
+          {/* Filter tabs for card requests */}
+          <div className="flex items-center gap-1.5 p-1 bg-slate-950 border border-slate-800 rounded-xl">
+            <button
+              onClick={() => setCardFilter('pending')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                cardFilter === 'pending'
+                  ? 'bg-amber-500 text-slate-950'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isAr ? 'قيد المراجعة ⏳' : 'En attente'} ({cardRequests.filter(r => r.status === 'pending').length})
+            </button>
+            <button
+              onClick={() => setCardFilter('approved')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                cardFilter === 'approved'
+                  ? 'bg-emerald-500 text-slate-950'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isAr ? 'المعتمدة ✅' : 'Validées'} ({cardRequests.filter(r => r.status === 'approved').length})
+            </button>
+            <button
+              onClick={() => setCardFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                cardFilter === 'all'
+                  ? 'bg-slate-800 text-white'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {isAr ? 'الكل' : 'Tous'} ({cardRequests.length})
+            </button>
+          </div>
+        </div>
+
+        {/* Requests Cards List */}
+        {cardRequests.length === 0 ? (
+          <div className="p-8 rounded-2xl bg-slate-950/40 border border-slate-800/80 text-center text-xs text-slate-400">
+            {isAr ? 'لا توجد طلبات بطاقات مرسلة حالياً.' : 'Aucune demande de carte pour le moment.'}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {cardRequests
+              .filter(r => cardFilter === 'all' || r.status === cardFilter)
+              .map((req) => (
+                <div
+                  key={req.id}
+                  className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3 ${
+                    req.status === 'approved'
+                      ? 'bg-slate-950/80 border-emerald-500/30'
+                      : req.status === 'rejected'
+                      ? 'bg-slate-950/50 border-rose-900/40 opacity-70'
+                      : 'bg-slate-950 border-amber-500/40 ring-1 ring-amber-500/20'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        req.tierRequested === 'STUDENT'
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                      }`}>
+                        {req.tierRequested === 'STUDENT' ? <GraduationCap className="w-5 h-5" /> : <CreditCard className="w-5 h-5" />}
+                      </div>
+                      <div>
+                        <h4 className="font-black text-sm text-white">{req.fullName}</h4>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full inline-block mt-0.5 ${
+                          req.tierRequested === 'STUDENT'
+                            ? 'bg-emerald-500/15 text-emerald-300'
+                            : 'bg-amber-500/15 text-amber-300'
+                        }`}>
+                          {req.tierRequested === 'STUDENT' ? (isAr ? 'طلب بطاقة طالب جامعي (PRO 20%) 🎓' : 'Carte Étudiant PRO (20%)') : (isAr ? 'طلب بطاقة ستوندار (10%) 💳' : 'Carte Standard (10%)')}
+                        </span>
+                      </div>
+                    </div>
+
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded-lg shrink-0 ${
+                      req.status === 'approved'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : req.status === 'rejected'
+                        ? 'bg-rose-500/20 text-rose-300'
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    }`}>
+                      {req.status === 'approved' ? (isAr ? 'معتمدة ومفعلة ✅' : 'Validée') : req.status === 'rejected' ? (isAr ? 'مرفوضة ❌' : 'Rejetée') : (isAr ? 'في الانتظار ⏳' : 'En attente')}
+                    </span>
+                  </div>
+
+                  {req.university && (
+                    <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="font-semibold">{req.university}</span>
+                    </div>
+                  )}
+
+                  {/* Student Card Photo Preview */}
+                  {req.studentCardImageUrl && (
+                    <div className="space-y-1.5">
+                      <span className="text-[10px] text-slate-400 block font-bold">
+                        {isAr ? 'صورة بطاقة الطالب الجامعية المرفوعة (اضغط للتكبير والفحص):' : 'Photo de la carte d’étudiant :'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setViewingCardImage({ url: req.studentCardImageUrl!, studentName: req.fullName })}
+                        className="w-full relative h-36 rounded-xl overflow-hidden border border-emerald-500/40 group hover:border-emerald-400 transition-colors bg-black"
+                      >
+                        <img
+                          src={req.studentCardImageUrl}
+                          alt="Student Card"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                        <div className="absolute inset-0 bg-slate-950/40 group-hover:bg-slate-950/20 flex items-center justify-center transition-colors">
+                          <span className="px-3 py-1 rounded-xl bg-slate-950/80 text-emerald-400 font-bold text-xs flex items-center gap-1 border border-emerald-500/30 shadow-lg">
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>{isAr ? 'تكبير وفحص الاسم' : 'Agrandir'}</span>
+                          </span>
+                        </div>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Direct Contact Bar */}
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-800/80">
+                    <a
+                      href={`tel:${req.phone}`}
+                      className="p-2 rounded-xl bg-slate-900 hover:bg-slate-850 border border-slate-800 text-amber-400 font-bold text-xs flex items-center justify-center gap-1 transition-colors"
+                      title={req.phone}
+                    >
+                      <PhoneCall className="w-3.5 h-3.5" />
+                      <span dir="ltr" className="font-mono">{req.phone}</span>
+                    </a>
+
+                    <a
+                      href={`https://wa.me/${req.phone.replace(/^0/, '213')}?text=${encodeURIComponent(
+                        isAr
+                          ? `السلام عليكم ${req.fullName}، بخصوص طلب بطاقتك في منصة GC58 FORMATIONS...`
+                          : `Bonjour ${req.fullName}, concernant votre carte GC58...`
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-2 rounded-xl bg-[#25D366]/15 hover:bg-[#25D366]/25 border border-[#25D366]/30 text-[#25D366] font-bold text-xs flex items-center justify-center gap-1 transition-colors"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 fill-[#25D366]" />
+                      <span>{isAr ? 'واتساب' : 'WhatsApp'}</span>
+                    </a>
+                  </div>
+
+                  {/* Actions Bar */}
+                  <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+                    {req.status !== 'approved' && (
+                      <button
+                        type="button"
+                        onClick={() => req.id && handleApproveCard(req.id, req.fullName)}
+                        className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        <span>{isAr ? 'قبول وتفعيل البطاقة فوراً' : 'Valider la carte'}</span>
+                      </button>
+                    )}
+
+                    {req.status === 'pending' && (
+                      <button
+                        type="button"
+                        onClick={() => req.id && handleRejectCard(req.id, req.fullName)}
+                        className="py-2 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        {isAr ? 'رفض' : 'Rejeter'}
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => req.id && handleDeleteCardRequest(req.id)}
+                      className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-500 hover:text-rose-400 transition-colors"
+                      title={isAr ? 'حذف من السجل' : 'Supprimer'}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        )}
+      </div>
+
+      {/* SECTION 2: TOP BANNER & MEMBERS LIST */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-black mb-1.5">
@@ -769,6 +1051,62 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
               </a>
             )}
 
+          </div>
+        </div>
+      )}
+
+      {/* Student Card Photo Zoom & Inspection Modal for Admin */}
+      {viewingCardImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setViewingCardImage(null)}
+        >
+          <div 
+            className="max-w-3xl w-full bg-slate-900 border border-slate-700 rounded-3xl p-4 sm:p-6 space-y-4 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <GraduationCap className="w-6 h-6 text-emerald-400" />
+                <div>
+                  <h3 className="font-extrabold text-white text-base">
+                    {isAr ? `فحص بطاقة الطالب: ${viewingCardImage.studentName}` : `Inspection Carte Étudiant : ${viewingCardImage.studentName}`}
+                  </h3>
+                  <p className="text-xs text-amber-300 font-medium">
+                    {isAr ? '⚠️ تأكد من تطابق الاسم الكامل على بطاقة الطالب الجامعية مع الاسم المسجل أعلاه' : 'Vérifiez la concordance stricte du nom officiel'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingCardImage(null)}
+                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                title={isAr ? 'إغلاق' : 'Fermer'}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] overflow-auto rounded-2xl border border-slate-800 bg-black flex items-center justify-center p-2">
+              <img
+                src={viewingCardImage.url}
+                alt={viewingCardImage.studentName}
+                className="max-w-full max-h-[65vh] object-contain rounded-xl shadow-lg"
+              />
+            </div>
+
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs text-slate-400">
+                {isAr ? 'مستند ثبوتي مرفوع من طرف الطالب للمصادقة' : 'Document officiel fourni par l’étudiant'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setViewingCardImage(null)}
+                className="px-5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs"
+              >
+                {isAr ? 'إغلاق الفحص' : 'Fermer'}
+              </button>
+            </div>
           </div>
         </div>
       )}

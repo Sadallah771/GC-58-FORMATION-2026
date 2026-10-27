@@ -30,10 +30,11 @@ import {
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { Course, Language, Registration, Review, GiftCourseSettings } from '../types';
+import { Course, Language, Registration, Review, GiftCourseSettings, MemberCardRequest } from '../types';
 import { COURSES_DATA } from '../data/coursesData';
 import { LoyaltyCardPro } from './LoyaltyCardPro';
 import { calculateClientLoyalty } from '../utils/loyaltyHelper';
+import { StudentCardRequestForm } from './StudentCardRequestForm';
 
 interface StudentDashboardProps {
   language: Language;
@@ -83,14 +84,17 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     };
   }, [user, giftCourse?.secretAccessCode]);
 
-  // Course Progress State (saved in localStorage for instant tracking)
-  const [completedLessons, setCompletedLessons] = useState<Record<string, string[]>>(() => {
+  // Member Card Request State (Student or Standard card submitted for admin validation)
+  const [userCardRequest, setUserCardRequest] = useState<MemberCardRequest | null>(() => {
     try {
-      const saved = localStorage.getItem('dz_student_progress');
-      return saved ? JSON.parse(saved) : {};
+      if (user?.email) {
+        const saved = localStorage.getItem(`gc58_card_request_${user.email.toLowerCase()}`);
+        return saved ? JSON.parse(saved) : null;
+      }
     } catch {
-      return {};
+      return null;
     }
+    return null;
   });
 
   // Review & Evaluation state
@@ -99,6 +103,27 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
+
+  // Sync real-time card request for current student
+  useEffect(() => {
+    if (!user?.email) return;
+    try {
+      const q = query(collection(db, 'card_requests'), where('email', '==', user.email.toLowerCase()));
+      const unsub = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const docItem = snapshot.docs[0];
+          const parsed = { id: docItem.id, ...(docItem.data() as MemberCardRequest) };
+          setUserCardRequest(parsed);
+          try {
+            localStorage.setItem(`gc58_card_request_${user.email!.toLowerCase()}`, JSON.stringify(parsed));
+          } catch {}
+        }
+      });
+      return () => unsub();
+    } catch (err) {
+      console.warn('Card request listener:', err);
+    }
+  }, [user?.email]);
 
   // Fetch student orders from Firestore
   useEffect(() => {
@@ -126,19 +151,6 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       setLoadingOrders(false);
     }
   }, [user]);
-
-  const toggleLessonProgress = (courseId: string, topicName: string) => {
-    const current = completedLessons[courseId] || [];
-    let updated: string[];
-    if (current.includes(topicName)) {
-      updated = current.filter((t) => t !== topicName);
-    } else {
-      updated = [...current, topicName];
-    }
-    const newProgress = { ...completedLessons, [courseId]: updated };
-    setCompletedLessons(newProgress);
-    localStorage.setItem('dz_student_progress', JSON.stringify(newProgress));
-  };
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,7 +225,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   }
 
   const userPhone = (user && 'phoneNumber' in user ? String((user as any).phoneNumber) : '') || '';
-  const loyalty = calculateClientLoyalty(myRegistrations, user?.email, userPhone);
+  const assignedTier = userCardRequest?.tierRequested;
+  const isCardApproved = userCardRequest?.status === 'approved';
+  const loyalty = calculateClientLoyalty(
+    myRegistrations,
+    user?.email,
+    userPhone,
+    assignedTier,
+    isCardApproved
+  );
+  if (userCardRequest) {
+    loyalty.cardStatus = userCardRequest.status;
+    loyalty.isCardApproved = isCardApproved;
+    if (userCardRequest.studentCardImageUrl) {
+      loyalty.studentCardImageUrl = userCardRequest.studentCardImageUrl;
+    }
+  }
   const isGolden = loyalty.paidCoursesCount >= 14;
 
   return (
@@ -515,101 +542,16 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </div>
         </div>
 
-        {/* Center / Right Column: Interactive Course Progression & Review Form */}
+        {/* Center / Right Column: Student Card Application & Review Form */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Progression Tracker */}
-          <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-6">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-amber-400" />
-                  <span>{isAr ? 'متابعة تقدم المستوى والدروس المكتملة' : 'Suivi de Progression Pédagogique'}</span>
-                </h3>
-              </div>
-              <p className="text-xs text-slate-400">
-                {isAr
-                  ? 'ضع علامة أمام كل درس قمت بإنهائه لمتابعة نسبة استيعابك وتطور مستواك في البرامج'
-                  : 'Cochez les modules assimilés pour suivre l’évolution de vos compétences'}
-              </p>
-            </div>
-
-            {/* Select course to view modules */}
-            <div className="space-y-4">
-              <div className="flex flex-wrap gap-2">
-                {COURSES_DATA.slice(0, 4).map((c) => (
-                  <button
-                    key={c.id}
-                    onClick={() => setReviewCourseId(c.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      reviewCourseId === c.id
-                        ? 'bg-amber-500 text-slate-950'
-                        : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    {c.software}
-                  </button>
-                ))}
-              </div>
-
-              {/* Progress bar */}
-              {(() => {
-                const target = COURSES_DATA.find((c) => c.id === reviewCourseId) || COURSES_DATA[0];
-                const allTopics = target.syllabus.flatMap((m) => m.topics);
-                const completed = completedLessons[target.id] || [];
-                const percent = allTopics.length > 0 ? Math.round((completed.length / allTopics.length) * 100) : 0;
-
-                return (
-                  <div className="p-5 rounded-2xl bg-slate-950/80 border border-slate-800/80 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="text-sm font-bold text-white">{target.title}</h4>
-                        <span className="text-xs text-slate-400">{completed.length} sur {allTopics.length} modules validés</span>
-                      </div>
-                      <span className="text-xl font-black text-amber-400">{percent}%</span>
-                    </div>
-
-                    {/* Progress bar track */}
-                    <div className="w-full h-2.5 rounded-full bg-slate-800 overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-amber-500 to-emerald-400 transition-all duration-500"
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-
-                    {/* Module checklists */}
-                    <div className="space-y-3 pt-2">
-                      {target.syllabus.map((mod, mIdx) => (
-                        <div key={mIdx} className="space-y-1.5">
-                          <p className="text-xs font-bold text-slate-300">{mod.title}</p>
-                          <div className="space-y-1 pl-2">
-                            {mod.topics.map((top, tIdx) => {
-                              const isChecked = (completedLessons[target.id] || []).includes(top);
-                              return (
-                                <label
-                                  key={tIdx}
-                                  className="flex items-start gap-2 text-xs text-slate-400 cursor-pointer hover:text-slate-200"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    checked={isChecked}
-                                    onChange={() => toggleLessonProgress(target.id, top)}
-                                    className="w-4 h-4 rounded text-amber-500 focus:ring-0 bg-slate-900 border-slate-700 mt-0.5 cursor-pointer"
-                                  />
-                                  <span className={isChecked ? 'line-through text-slate-500' : ''}>
-                                    {top}
-                                  </span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
+          {/* Student / Standard Card Application & Admin Validation */}
+          <StudentCardRequestForm
+            language={language}
+            userEmail={user.email || ''}
+            userName={user.displayName || ''}
+            existingRequest={userCardRequest}
+            onRequestSubmitted={(newReq) => setUserCardRequest(newReq)}
+          />
 
           {/* Student Evaluation / Review System */}
           <div className="p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-6">

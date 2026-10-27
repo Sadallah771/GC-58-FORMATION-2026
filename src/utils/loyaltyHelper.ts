@@ -73,6 +73,49 @@ export const ALL_TIER_DETAILS: Record<LoyaltyTier, TierDetails> = {
       },
     ],
   },
+  STUDENT: {
+    tier: 'STUDENT',
+    threshold: 0,
+    nameAr: 'بطاقة الطالب الجامعي (Carte Étudiant 🎓)',
+    nameFr: 'Carte Étudiant GC58 🎓',
+    badgeAr: 'طالب جامعي 🎓',
+    badgeFr: 'Étudiant BTP 🎓',
+    summaryAr: 'مخصصة للطلبة الجامعيين - تمنح نفس مميزات البرو (تخفيض 20%، كتب ومراجع مجانية) بشرط رفع بطاقة الطالب لنفس الاسم',
+    summaryFr: 'Réservée aux étudiants : privilèges PRO (20% de remise, livres gratuits et support) sur validation de la carte d’étudiant.',
+    discountBadge: '20% Réduction PRO',
+    perks: [
+      {
+        id: 'stud_pro_discount',
+        titleAr: 'تخفيض 20% كامل على جميع الدورات (مميزات البرو) 🎓',
+        titleFr: 'Remise PRO de 20% sur toutes les formations 🎓',
+        descAr: 'يحصل الطالب المعتمد على نفس نسبة تخفيض فئة البرو (20%) تشجيعاً لمساره الأكاديمي والمهني.',
+        descFr: 'Bénéficiez du tarif préférentiel PRO avec 20% de réduction immédiate.',
+        isHighlight: true,
+      },
+      {
+        id: 'stud_free_books',
+        titleAr: 'المكتبة الهندسية ومذكرات التخرج مجاناً',
+        titleFr: 'Bibliothèque de PFE & livres gratuits',
+        descAr: 'تحميل مباشر للكتب الهندسية، مذكرات التخرج والملفات المرجعية المرفوعة في المنصة.',
+        descFr: 'Téléchargement de projets de fin d’études, mémoires et livres spécialisés.',
+      },
+      {
+        id: 'stud_free_gift',
+        titleAr: 'مشاهدة الدورة الهدية المجانية بالكامل 🎁',
+        titleFr: 'Accès complet à la formation offerte 🎁',
+        descAr: 'فتح الدورة المجانية المهداة ومتابعة حلقاتها في أي وقت.',
+        descFr: 'Suivez la formation offerte avec vidéos HD.',
+        isHighlight: true,
+      },
+      {
+        id: 'stud_strict_validation',
+        titleAr: 'اعتماد رسمي صارم من طرف الأدمين 🛡️',
+        titleFr: 'Validation rigoureuse par l’administration 🛡️',
+        descAr: 'يتم تفعيل البطاقة حصرياً بعد تدقيق ومطابقة اسم الطالب الحقيقي مع بطاقة الطالب الجامعية المرفوعة.',
+        descFr: 'Activation après vérification de concordance entre nom réel et carte universitaire.',
+      },
+    ],
+  },
   PRO: {
     tier: 'PRO',
     threshold: 3,
@@ -251,7 +294,9 @@ export const ALL_TIER_DETAILS: Record<LoyaltyTier, TierDetails> = {
 export function calculateClientLoyalty(
   orders: Registration[],
   userEmail?: string | null,
-  userPhone?: string | null
+  userPhone?: string | null,
+  assignedTier?: LoyaltyTier | null,
+  isCardApproved: boolean = true
 ): ClientLoyaltyData {
   // Filter confirmed paid orders
   const paidOrders = orders.filter((o) => {
@@ -311,6 +356,10 @@ export function calculateClientLoyalty(
     tier = 'PRO';
     nextTierThreshold = 5;
     progressPercent = Math.round(((paidCount - 3) / (5 - 3)) * 100);
+  } else if (assignedTier === 'STUDENT') {
+    tier = 'STUDENT';
+    nextTierThreshold = 3;
+    progressPercent = Math.round((paidCount / 3) * 100);
   } else {
     tier = 'STANDARD';
     nextTierThreshold = 3;
@@ -326,6 +375,7 @@ export function calculateClientLoyalty(
 
   return {
     tier,
+    isCardApproved,
     paidCoursesCount: paidCount,
     paidCourseIds: Array.from(uniqueCourseIds),
     paidCourseNames: uniqueCourseNames,
@@ -372,6 +422,22 @@ export function getTierTheme(tier: LoyaltyTier) {
         textColor: 'text-slate-200',
         bgPill: 'bg-slate-300/20 text-slate-200 border-slate-300/40',
         benefits: 'تخفيض 20% على أي دورة + أولوية المراجعة والتدقيق الهندسي لمشاريع التخرج والعمل',
+      };
+    case 'STUDENT':
+      return {
+        nameAr: 'بطاقة الطالب الجامعي (Carte Étudiant 🎓)',
+        nameFr: 'Carte Étudiant Universitaire 🎓',
+        cardGradient: 'from-emerald-600 via-teal-600 to-cyan-700',
+        textGradient: 'from-emerald-200 via-teal-100 to-cyan-200',
+        metalTexture: 'bg-gradient-to-tr from-emerald-950/95 via-teal-900/80 to-slate-950/95',
+        badgeBg: 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black',
+        glowColor: 'shadow-emerald-500/25',
+        borderColor: 'border-emerald-500/50',
+        chipColor: 'from-emerald-300 to-teal-400',
+        stampActive: 'bg-gradient-to-r from-emerald-400 to-teal-400 text-slate-950 font-black shadow-lg shadow-emerald-500/40',
+        textColor: 'text-emerald-300',
+        bgPill: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+        benefits: 'مميزات فئة البرو كاملة (20% تخفيض + كتب ومذكرات تخرج مجانية)',
       };
     case 'PRO':
       return {
@@ -494,11 +560,12 @@ export function aggregateClientsLoyalty(orders: Registration[]): ClientSummaryWi
     });
   });
 
-  // Sort: Golden > Silver > Pro > Standard, then paid courses desc
+  // Sort: Golden > Silver > Pro > Student > Standard, then paid courses desc
   const tierWeight: Record<LoyaltyTier, number> = {
-    GOLDEN: 4,
-    SILVER: 3,
-    PRO: 2,
+    GOLDEN: 5,
+    SILVER: 4,
+    PRO: 3,
+    STUDENT: 2,
     STANDARD: 1,
   };
 
@@ -516,6 +583,7 @@ export function aggregateClientsLoyalty(orders: Registration[]): ClientSummaryWi
 /**
  * Returns the exact discount percentage per membership tier as specified:
  * - Standard: 10%
+ * - Student: 20% (Perks of PRO)
  * - PRO: 20%
  * - Silver: 20%
  * - Golden: 30%
@@ -528,6 +596,8 @@ export function getTierDiscountPercent(tier?: LoyaltyTier | null): number {
       return 20;
     case 'PRO':
       return 20;
+    case 'STUDENT':
+      return 20; // الطالب عندو مميزات البرو (20%)
     case 'STANDARD':
     default:
       return 10;
@@ -545,6 +615,8 @@ export function getTierNameAr(tier?: LoyaltyTier | null): string {
       return 'الفضية النخبة';
     case 'PRO':
       return 'الاحترافية PRO';
+    case 'STUDENT':
+      return 'طالب جامعي Étudiant 🎓';
     case 'STANDARD':
     default:
       return 'ستوندار Standard';
@@ -562,6 +634,8 @@ export function getTierNameFr(tier?: LoyaltyTier | null): string {
       return 'Silver Privilège';
     case 'PRO':
       return 'Membre PRO';
+    case 'STUDENT':
+      return 'Étudiant Universitaire 🎓';
     case 'STANDARD':
     default:
       return 'Standard';
