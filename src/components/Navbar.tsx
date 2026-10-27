@@ -18,11 +18,12 @@ import {
   Crown,
   CreditCard,
   Download,
-  Bell
+  Bell,
+  Home
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_EMAIL } from '../firebase';
-import { Language } from '../types';
+import { Language, AppView } from '../types';
 import { NotificationCenter } from './NotificationCenter';
 
 interface NavbarProps {
@@ -31,8 +32,8 @@ interface NavbarProps {
   selectedCourseIds: string[];
   onOpenCartOrEnroll: () => void;
   onOpenAuth: () => void;
-  currentView: 'catalog' | 'admin' | 'student';
-  setCurrentView: (view: 'catalog' | 'admin' | 'student') => void;
+  currentView: AppView;
+  setCurrentView: (view: AppView) => void;
   sitePhone: string;
   onOpenGiftModal: () => void;
   onOpenInstallModal?: () => void;
@@ -89,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
         {/* Brand Logo */}
         <div 
-          onClick={() => { setCurrentView('catalog'); setMobileMenuOpen(false); }}
+          onClick={() => { setCurrentView('home'); setMobileMenuOpen(false); }}
           className="flex items-center gap-3 cursor-pointer group"
         >
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:scale-105 transition-transform">
@@ -112,10 +113,24 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         {/* Desktop Navigation Links */}
         <nav className="hidden md:flex items-center gap-2">
+          {/* Home Link */}
           <button
-            onClick={() => setCurrentView('catalog')}
-            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-2 ${
-              currentView === 'catalog'
+            onClick={() => setCurrentView('home')}
+            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              currentView === 'home'
+                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+            }`}
+          >
+            <Home className="w-4 h-4" />
+            <span>{isAr ? 'الرئيسية' : 'Accueil'}</span>
+          </button>
+
+          {/* Courses Catalog Link */}
+          <button
+            onClick={() => setCurrentView('courses')}
+            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+              currentView === 'courses'
                 ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
             }`}
@@ -126,16 +141,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Gift Course Button (Free & Code-Gated) */}
           <button
-            onClick={() => {
-              if (!user) {
-                onOpenAuth();
-              } else {
-                onOpenGiftModal();
-              }
-            }}
-            className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-amber-500/20 via-amber-400/20 to-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all flex items-center gap-1.5 shadow-sm active:scale-95 group"
+            onClick={() => setCurrentView('gift')}
+            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer ${
+              currentView === 'gift'
+                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
+                : 'bg-amber-500/10 text-amber-300/90 border border-amber-500/30 hover:bg-amber-500/20'
+            }`}
           >
-            <Gift className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+            <Gift className="w-4 h-4 text-amber-400" />
             <span>{isAr ? 'هدية الموقع 🎁' : 'Cadeau Offert 🎁'}</span>
           </button>
 
@@ -145,10 +158,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               if (!user) {
                 onOpenAuth();
               } else {
-                setCurrentView(currentView === 'student' ? 'catalog' : 'student');
+                setCurrentView(currentView === 'student' ? 'home' : 'student');
               }
             }}
-            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               currentView === 'student'
                 ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20'
                 : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
@@ -228,7 +241,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {user ? (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setCurrentView(currentView === 'student' ? 'catalog' : 'student')}
+                onClick={() => setCurrentView(currentView === 'student' ? 'home' : 'student')}
                 className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs max-w-[150px] truncate transition-all cursor-pointer ${
                   currentView === 'student'
                     ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 ring-1 ring-amber-500/50'
@@ -251,7 +264,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => {
                   logout();
-                  setCurrentView('catalog');
+                  setCurrentView('home');
                 }}
                 className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-900 transition-colors"
                 title="تسجيل الخروج"
@@ -326,31 +339,43 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
           )}
 
+          {/* Mobile Drawer Home */}
           <button
-            onClick={() => { setCurrentView('catalog'); setMobileMenuOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold ${
-              currentView === 'catalog' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-300'
+            onClick={() => { setCurrentView('home'); setMobileMenuOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+              currentView === 'home' ? 'bg-amber-500/20 text-amber-400 font-bold' : 'text-slate-300 hover:bg-slate-900'
             }`}
           >
-            <BookOpen className="w-5 h-5" />
+            <Home className="w-5 h-5 text-amber-400" />
+            <span>{isAr ? 'الصفحة الرئيسية' : 'Page d’accueil'}</span>
+          </button>
+
+          {/* Mobile Drawer Courses */}
+          <button
+            onClick={() => { setCurrentView('courses'); setMobileMenuOpen(false); }}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+              currentView === 'courses' ? 'bg-amber-500/20 text-amber-400 font-bold' : 'text-slate-300 hover:bg-slate-900'
+            }`}
+          >
+            <BookOpen className="w-5 h-5 text-amber-400" />
             <span>{isAr ? 'قائمة الدورات التدريبية' : 'Toutes les formations'}</span>
           </button>
 
+          {/* Mobile Drawer Gift */}
           <button
             onClick={() => {
-              if (!user) {
-                onOpenAuth();
-              } else {
-                onOpenGiftModal();
-              }
+              setCurrentView('gift');
               setMobileMenuOpen(false);
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold bg-amber-500/15 text-amber-300 border border-amber-500/40"
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+              currentView === 'gift' ? 'bg-amber-500/25 text-amber-300 border border-amber-500/40' : 'bg-amber-500/10 text-amber-300/90 border border-amber-500/20'
+            }`}
           >
             <Gift className="w-5 h-5 text-amber-400" />
             <span>{isAr ? 'هدية الموقع (دورة مجانية مشفرة) 🎁' : 'Cadeau du Site 🎁'}</span>
           </button>
 
+          {/* Mobile Drawer Student Card */}
           <button
             onClick={() => {
               if (!user) {
@@ -360,7 +385,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }
               setMobileMenuOpen(false);
             }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all cursor-pointer ${
               currentView === 'student'
                 ? 'bg-amber-500 text-slate-950 font-black'
                 : 'text-slate-300 bg-slate-900 border border-slate-800'
@@ -369,8 +394,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <Crown className="w-5 h-5 text-amber-400" />
             <span>{isAr ? 'بطاقة العضوية GC58 PRO (سجلي ومكافآتي)' : 'Ma Carte PRO & Récompenses'}</span>
           </button>
-
-
 
           <a
             href={whatsappUrl}
@@ -394,7 +417,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {isAdmin && (
             <button
               onClick={() => { setCurrentView('admin'); setMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold ${
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold cursor-pointer ${
                 currentView === 'admin' ? 'bg-emerald-500 text-slate-950' : 'bg-emerald-950/40 text-emerald-400'
               }`}
             >
@@ -406,13 +429,92 @@ export const Navbar: React.FC<NavbarProps> = ({
           {!user && (
             <button
               onClick={() => { onOpenAuth(); setMobileMenuOpen(false); }}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold bg-white text-slate-950"
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-bold bg-white text-slate-950 cursor-pointer"
             >
               <span>{isAr ? 'تسجيل الدخول عبر Google' : 'Connexion Google'}</span>
             </button>
           )}
         </div>
       )}
+
+      {/* NATIVE MOBILE BOTTOM NAVIGATION BAR (FIXED FOR 1-HAND NAVIGATION) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800/90 px-3 py-2 flex items-center justify-around shadow-2xl">
+        <button
+          onClick={() => setCurrentView('home')}
+          className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+            currentView === 'home'
+              ? 'text-amber-400 font-bold scale-105'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Home className="w-5 h-5" />
+          <span className="text-[10px] leading-tight font-medium">{isAr ? 'الرئيسية' : 'Accueil'}</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('courses')}
+          className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+            currentView === 'courses'
+              ? 'text-amber-400 font-bold scale-105'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <BookOpen className="w-5 h-5" />
+          <span className="text-[10px] leading-tight font-medium">{isAr ? 'الدورات' : 'Formations'}</span>
+        </button>
+
+        <button
+          onClick={() => setCurrentView('gift')}
+          className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+            currentView === 'gift'
+              ? 'text-amber-400 font-bold scale-105'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Gift className="w-5 h-5" />
+          <span className="text-[10px] leading-tight font-medium">{isAr ? 'الهدية' : 'Cadeau'}</span>
+        </button>
+
+        <button
+          onClick={() => {
+            if (!user) {
+              onOpenAuth();
+            } else {
+              setCurrentView('student');
+            }
+          }}
+          className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+            currentView === 'student'
+              ? 'text-amber-400 font-bold scale-105'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <Crown className="w-5 h-5" />
+          <span className="text-[10px] leading-tight font-medium">{isAr ? 'بطاقتي' : 'Ma Carte'}</span>
+        </button>
+
+        {isAdmin ? (
+          <button
+            onClick={() => setCurrentView('admin')}
+            className={`flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl transition-all cursor-pointer ${
+              currentView === 'admin'
+                ? 'text-emerald-400 font-bold scale-105'
+                : 'text-emerald-500/80 hover:text-emerald-400'
+            }`}
+          >
+            <ShieldCheck className="w-5 h-5" />
+            <span className="text-[10px] leading-tight font-medium">{isAr ? 'الأدمين' : 'Admin'}</span>
+          </button>
+        ) : (
+          <button
+            onClick={onOpenCartOrEnroll}
+            className="flex flex-col items-center gap-1 py-1 px-2.5 rounded-xl text-amber-400 cursor-pointer"
+          >
+            <ShoppingCart className="w-5 h-5" />
+            <span className="text-[10px] leading-tight font-medium">{isAr ? 'طلب دورة' : 'Commander'}</span>
+          </button>
+        )}
+      </nav>
     </header>
   );
 };

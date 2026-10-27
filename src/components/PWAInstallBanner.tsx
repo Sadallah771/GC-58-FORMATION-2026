@@ -31,9 +31,21 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
 
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstallable, setIsInstallable] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    try {
+      if (localStorage.getItem('gc58_pwa_installed') === 'true') return true;
+      if (typeof window !== 'undefined') {
+        if (window.matchMedia('(display-mode: standalone)').matches) return true;
+        if ((window.navigator as any).standalone === true) return true;
+      }
+      return false;
+    } catch {
+      return false;
+    }
+  });
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     try {
+      if (localStorage.getItem('gc58_pwa_installed') === 'true') return true;
       return localStorage.getItem('gc58_pwa_banner_dismissed') === 'true';
     } catch {
       return false;
@@ -55,7 +67,7 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true;
 
-    if (isStandalone) {
+    if (isStandalone || localStorage.getItem('gc58_pwa_installed') === 'true') {
       setIsInstalled(true);
       return;
     }
@@ -81,6 +93,10 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
+      try {
+        localStorage.setItem('gc58_pwa_installed', 'true');
+        localStorage.setItem('gc58_pwa_banner_dismissed', 'true');
+      } catch {}
     });
 
     return () => {
@@ -95,6 +111,10 @@ export const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({
         const choice = await deferredPrompt.userChoice;
         if (choice.outcome === 'accepted') {
           setIsInstalled(true);
+          try {
+            localStorage.setItem('gc58_pwa_installed', 'true');
+            localStorage.setItem('gc58_pwa_banner_dismissed', 'true');
+          } catch {}
         }
         setDeferredPrompt(null);
       } catch (err) {

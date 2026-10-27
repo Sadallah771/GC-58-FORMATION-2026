@@ -16,7 +16,8 @@ import { GiftCourseSection } from './components/GiftCourseSection';
 import { GiftCourseModal } from './components/GiftCourseModal';
 import { CourseDetailModal } from './components/CourseDetailModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
-import { Course, Language, GiftCourseSettings, Registration, ClientLoyaltyData } from './types';
+import { HomePortalGateways } from './components/HomePortalGateways';
+import { Course, Language, AppView, GiftCourseSettings, Registration, ClientLoyaltyData } from './types';
 import { COURSES_DATA } from './data/coursesData';
 import { DEFAULT_GIFT_COURSE } from './utils/driveHelper';
 import { calculateClientLoyalty } from './utils/loyaltyHelper';
@@ -27,7 +28,7 @@ import { useAuth } from './context/AuthContext';
 function AppContent() {
   const { user, isAdmin } = useAuth();
   const [language, setLanguage] = useState<Language>('ar');
-  const [currentView, setCurrentView] = useState<'catalog' | 'admin' | 'student'>('catalog');
+  const [currentView, setCurrentView] = useState<AppView>('home');
   
   // Dynamic courses that can be edited by Admin
   const [courses, setCourses] = useState<Course[]>(COURSES_DATA);
@@ -188,7 +189,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-amber-500 selection:text-slate-950">
+    <div className="min-h-screen flex flex-col bg-slate-950 text-slate-100 selection:bg-amber-500 selection:text-slate-950 w-full max-w-full overflow-x-hidden pb-16 md:pb-0">
       {/* 50-Hours Promotional Countdown Banner */}
       <PromoCountdownBar
         language={language}
@@ -216,21 +217,100 @@ function AppContent() {
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
       />
 
-      {/* Main View Router */}
-      <main className="flex-1">
-        {currentView === 'catalog' && (
-          <>
+      {/* Main View Router - Each Section Dedicated & Uncluttered */}
+      <main className="flex-1 w-full max-w-full">
+        {/* 1. HOME VIEW: High-Level Clean Gateway Hub */}
+        {currentView === 'home' && (
+          <div className="space-y-6 sm:space-y-10 animate-in fade-in duration-300">
             <Hero
               language={language}
-              onExploreCourses={() => {
-                const el = document.getElementById('courses-section');
-                el?.scrollIntoView({ behavior: 'smooth' });
-              }}
+              onExploreCourses={() => setCurrentView('courses')}
               onOpenFastEnroll={handleOpenCartOrEnroll}
               sitePhone={sitePhone}
             />
 
-            {/* Exclusive Site Gift Section (Google Drive Free Course) */}
+            {/* Clean Section Navigation Gateways */}
+            <HomePortalGateways
+              language={language}
+              onNavigate={setCurrentView}
+              userLoyalty={userLoyalty}
+              onOpenGiftModal={() => setIsGiftModalOpen(true)}
+              onOpenFastEnroll={handleOpenCartOrEnroll}
+            />
+
+            {/* Verified Student Reviews & Testimonials */}
+            <ReviewsSection
+              language={language}
+              onOpenEvaluateModal={() => setIsReviewModalOpen(true)}
+            />
+          </div>
+        )}
+
+        {/* 2. COURSES VIEW: Dedicated Course Catalog Branch */}
+        {currentView === 'courses' && (
+          <div className="py-6 animate-in fade-in duration-300">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+              <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800">
+                <button
+                  onClick={() => setCurrentView('home')}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <span>{language === 'ar' ? '⬅️ العودة للرئيسية' : '⬅️ Retour à l’accueil'}</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentView('gift')}
+                    className="px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>{language === 'ar' ? 'دورة الهدية 🎁' : 'Formation Cadeau 🎁'}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!user) setIsAuthModalOpen(true);
+                      else setCurrentView('student');
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    <span>{language === 'ar' ? 'بطاقتي 💳' : 'Ma Carte 💳'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <CourseCatalog
+              language={language}
+              courses={courses}
+              userLoyalty={userLoyalty}
+              onSelectCourseForDetail={(c) => setCourseForDetail(c)}
+              onSelectCourseForEnroll={handleEnrollSingleCourse}
+              selectedCourseIds={selectedCourseIds}
+              onToggleSelectCourse={toggleSelectCourse}
+            />
+          </div>
+        )}
+
+        {/* 3. GIFT VIEW: Dedicated Free Course Arena */}
+        {currentView === 'gift' && (
+          <div className="py-6 animate-in fade-in duration-300">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+              <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900 border border-slate-800">
+                <button
+                  onClick={() => setCurrentView('home')}
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <span>{language === 'ar' ? '⬅️ العودة للرئيسية' : '⬅️ Retour à l’accueil'}</span>
+                </button>
+
+                <button
+                  onClick={() => setCurrentView('courses')}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                >
+                  <span>{language === 'ar' ? 'تصفح كل الدورات 🎓' : 'Toutes les formations 🎓'}</span>
+                </button>
+              </div>
+            </div>
+
             <GiftCourseSection
               language={language}
               giftCourse={giftCourse}
@@ -244,48 +324,48 @@ function AppContent() {
               user={user}
               onOpenAuth={() => setIsAuthModalOpen(true)}
             />
+          </div>
+        )}
 
-            <CourseCatalog
+        {/* 4. ADMIN VIEW: Segmented Admin Master Suite */}
+        {currentView === 'admin' && (
+          <div className="animate-in fade-in duration-300">
+            <AdminDashboard
               language={language}
               courses={courses}
-              userLoyalty={userLoyalty}
-              onSelectCourseForDetail={(c) => setCourseForDetail(c)}
-              onSelectCourseForEnroll={handleEnrollSingleCourse}
-              selectedCourseIds={selectedCourseIds}
-              onToggleSelectCourse={toggleSelectCourse}
+              onUpdateCourses={(updated) => setCourses(updated)}
+              sitePhone={sitePhone}
+              onUpdateSitePhone={(newP) => setSitePhone(newP)}
+              onCloseAdmin={() => setCurrentView('home')}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+              giftCourse={giftCourse}
+              onSaveGiftCourse={handleSaveGiftCourse}
+              initialTab={adminInitialTab}
             />
-
-            <ReviewsSection
-              language={language}
-              onOpenEvaluateModal={() => setIsReviewModalOpen(true)}
-            />
-          </>
+          </div>
         )}
 
-        {currentView === 'admin' && (
-          <AdminDashboard
-            language={language}
-            courses={courses}
-            onUpdateCourses={(updated) => setCourses(updated)}
-            sitePhone={sitePhone}
-            onUpdateSitePhone={(newP) => setSitePhone(newP)}
-            onCloseAdmin={() => setCurrentView('catalog')}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            giftCourse={giftCourse}
-            onSaveGiftCourse={handleSaveGiftCourse}
-            initialTab={adminInitialTab}
-          />
-        )}
-
+        {/* 5. STUDENT VIEW: Dedicated Member Area & VIP Card */}
         {currentView === 'student' && (
-          <StudentDashboard
-            language={language}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onOpenEnroll={handleOpenCartOrEnroll}
-            sitePhone={sitePhone}
-            onOpenGiftModal={() => setIsGiftModalOpen(true)}
-            giftCourse={giftCourse}
-          />
+          <div className="py-4 animate-in fade-in duration-300">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-4">
+              <button
+                onClick={() => setCurrentView('home')}
+                className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>{language === 'ar' ? '⬅️ العودة للرئيسية' : '⬅️ Retour à l’accueil'}</span>
+              </button>
+            </div>
+
+            <StudentDashboard
+              language={language}
+              onOpenAuth={() => setIsAuthModalOpen(true)}
+              onOpenEnroll={handleOpenCartOrEnroll}
+              sitePhone={sitePhone}
+              onOpenGiftModal={() => setIsGiftModalOpen(true)}
+              giftCourse={giftCourse}
+            />
+          </div>
         )}
       </main>
 
@@ -295,9 +375,9 @@ function AppContent() {
       {/* Footer */}
       <Footer
         language={language}
-        onSelectCategory={(cat) => {
-          setCurrentView('catalog');
-          window.scrollTo({ top: 400, behavior: 'smooth' });
+        onSelectCategory={() => {
+          setCurrentView('courses');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onOpenEnroll={handleOpenCartOrEnroll}
         sitePhone={sitePhone}

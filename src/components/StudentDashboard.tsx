@@ -217,7 +217,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const isGolden = loyalty.paidCoursesCount >= 14;
 
   return (
-    <div className="py-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
+    <div className="py-6 sm:py-10 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-8 sm:space-y-10 w-full max-w-full overflow-x-hidden">
       {/* Student Welcome Header */}
       <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
         <div className="flex items-center gap-4">

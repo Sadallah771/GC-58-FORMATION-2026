@@ -1,3 +1,5 @@
+export type AppView = 'home' | 'courses' | 'gift' | 'student' | 'admin';
+
 export type CourseCategory = 'beton_arme' | 'charpente_metallique' | 'routes_vrd';
 
 export interface Instructor {
