@@ -108,6 +108,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [show14RequirementDetails, setShow14RequirementDetails] = useState(false);
 
   // Sync real-time card request for current student
   useEffect(() => {
@@ -479,30 +480,34 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </span>
             </div>
 
-            {/* Clear Requirement Notice */}
+            {/* Clear Requirement Notice with Progressive Disclosure */}
             {!isGolden ? (
-              <div className="p-3 rounded-xl bg-slate-950 border border-amber-500/30 text-slate-300 text-xs space-y-1">
-                <div className="flex items-center gap-1.5 text-amber-400 font-bold">
-                  <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span>{isAr ? 'شرط إكمال 14 دورة للمساعدة والملفات:' : 'Condition 14 cours pour assistance & fichiers :'}</span>
+              <div className="p-3 rounded-xl bg-slate-950 border border-amber-500/30 text-slate-300 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-amber-400 font-bold">
+                    <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>{isAr ? 'فتح الشيتات والدعم متاح لأصحاب 14 دورة' : 'Feuilles & support : réservé aux 14 cours'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShow14RequirementDetails(!show14RequirementDetails)}
+                    className="text-[11px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer shrink-0"
+                  >
+                    {show14RequirementDetails ? (isAr ? 'إخفاء' : 'Fermer') : (isAr ? 'مزيد من التفاصيل ▾' : 'Détails ▾')}
+                  </button>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  {isAr
-                    ? 'شيتات الإكسل الحسابية، تحميل ملفات المشاريع والنمذجة، ومساعدة العملاء والدعم الفني تتطلب إكمال 14 دورة (المستوى الذهبي) لنتمكن من مساعدتك وفتح الملفات لك.'
-                    : 'Les feuilles de calcul Excel, le téléchargement des fichiers et l’assistance client nécessitent 14 cours validés (Niveau Golden).'}
-                </p>
+                {show14RequirementDetails && (
+                  <p className="text-[11px] text-slate-400 leading-relaxed pt-2 mt-2 border-t border-slate-800">
+                    {isAr
+                      ? 'شيتات الإكسل الحسابية، ملفات النمذجة 3D، ومساعدة تسطيب البرامج والدعم المباشر تتطلب إكمال 14 دورة (المستوى الذهبي GC58 VIP).'
+                      : 'Les feuilles de calcul, fichiers de projets et le support d’installation nécessitent d’atteindre le niveau Golden (14 formations).'}
+                  </p>
+                )}
               </div>
             ) : (
-              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs space-y-1">
-                <div className="flex items-center gap-1.5 font-black">
-                  <Unlock className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>{isAr ? 'مبارك! كافة الملفات والشيتات والمساعدة متاحة لك 👑' : 'Accès Total Débloqué 👑'}</span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  {isAr
-                    ? 'بما أنك أتممت 14 دورة مؤكدة، يحق لك تحميل كافة الملفات ونماذج الإكسل، وطلب المساعدة المباشرة وتسطيب البرامج من الفريق.'
-                    : 'En tant que membre Golden (14 formations), vous avez accès au téléchargement des fichiers et à l’assistance directe.'}
-                </p>
+              <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center gap-2">
+                <Unlock className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="font-bold">{isAr ? 'مبارك! كافة الملفات والشيتات والمساعدة متاحة لك 👑' : 'Accès Total Débloqué 👑'}</span>
               </div>
             )}
 

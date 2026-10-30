@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_EMAIL } from '../firebase';
-import { Language, AppView } from '../types';
+import { Language, AppView, ClientLoyaltyData } from '../types';
 import { NotificationCenter } from './NotificationCenter';
 
 interface NavbarProps {
@@ -37,6 +37,7 @@ interface NavbarProps {
   sitePhone: string;
   onOpenGiftModal: () => void;
   onOpenInstallModal?: () => void;
+  userLoyalty?: ClientLoyaltyData | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -50,6 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   sitePhone,
   onOpenGiftModal,
   onOpenInstallModal,
+  userLoyalty,
 }) => {
   const { user, isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
@@ -164,12 +166,30 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               currentView === 'student'
                 ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                : userLoyalty?.hasActiveCard
+                ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25'
+                : userLoyalty?.cardStatus === 'pending'
+                ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25'
+                : 'bg-amber-500/10 border border-amber-500/40 text-amber-300 hover:bg-amber-500/20 animate-pulse'
             }`}
-            title="بطاقة العضوية والولاء GC58 PRO"
+            title="طلب بطاقة العضوية والخصومات (مجاناً بدون شراء دورة)"
           >
-            <Crown className="w-4 h-4 text-amber-400" />
-            <span>{isAr ? 'بطاقتي GC58 PRO' : 'Ma Carte PRO'}</span>
+            {userLoyalty?.hasActiveCard ? (
+              <>
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>{isAr ? (userLoyalty.tier === 'STUDENT' ? 'بطاقتي: طالب 🎓' : 'بطاقتي المعتمدة 💳') : 'Ma Carte Active'}</span>
+              </>
+            ) : userLoyalty?.cardStatus === 'pending' ? (
+              <>
+                <CreditCard className="w-4 h-4 text-amber-400" />
+                <span>{isAr ? 'البطاقة: قيد المراجعة ⏳' : 'Carte en attente ⏳'}</span>
+              </>
+            ) : (
+              <>
+                <CreditCard className="w-4 h-4 text-amber-400" />
+                <span>{isAr ? 'اطلب بطاقتك مجاناً 💳' : 'Demander ma carte 💳'}</span>
+              </>
+            )}
           </button>
 
 
@@ -391,8 +411,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 : 'text-slate-300 bg-slate-900 border border-slate-800'
             }`}
           >
-            <Crown className="w-5 h-5 text-amber-400" />
-            <span>{isAr ? 'بطاقة العضوية GC58 PRO (سجلي ومكافآتي)' : 'Ma Carte PRO & Récompenses'}</span>
+            <CreditCard className="w-5 h-5 text-amber-400" />
+            <span>
+              {userLoyalty?.hasActiveCard 
+                ? (isAr ? 'بطاقتي المعتمدة والمفعلة 🎓' : 'Ma Carte Active') 
+                : userLoyalty?.cardStatus === 'pending'
+                ? (isAr ? 'طلب بطاقتي (قيد المراجعة ⏳)' : 'Demande en attente ⏳')
+                : (isAr ? 'طلب بطاقتي مجاناً (بدون شراء دورة) 💳' : 'Demander ma carte gratuite 💳')}
+            </span>
           </button>
 
           <a
@@ -524,8 +550,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
-          <Crown className="w-5 h-5" />
-          <span className="text-[10px] leading-tight font-medium">{isAr ? 'بطاقتي' : 'Ma Carte'}</span>
+          <CreditCard className="w-5 h-5" />
+          <span className="text-[10px] leading-tight font-medium">
+            {userLoyalty?.hasActiveCard 
+              ? (isAr ? 'بطاقتي' : 'Ma Carte') 
+              : userLoyalty?.cardStatus === 'pending'
+              ? (isAr ? 'قيد التدقيق' : 'En attente')
+              : (isAr ? 'طلب بطاقة' : 'Carte')}
+          </span>
         </button>
 
         {isAdmin ? (

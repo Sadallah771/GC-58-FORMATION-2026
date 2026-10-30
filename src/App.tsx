@@ -366,6 +366,7 @@ function AppContent() {
         sitePhone={sitePhone}
         onOpenGiftModal={() => setIsGiftModalOpen(true)}
         onOpenInstallModal={() => setIsInstallModalOpen(true)}
+        userLoyalty={userLoyalty}
       />
 
       {/* Main View Router - Each Section Dedicated & Uncluttered */}
@@ -377,6 +378,13 @@ function AppContent() {
               language={language}
               onExploreCourses={() => setCurrentView('courses')}
               onOpenFastEnroll={handleOpenCartOrEnroll}
+              onRequestCard={() => {
+                if (!user) {
+                  setIsAuthModalOpen(true);
+                } else {
+                  setCurrentView('student');
+                }
+              }}
               sitePhone={sitePhone}
             />
 
@@ -559,6 +567,11 @@ function AppContent() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         language={language}
+        onSuccessRedirect={() => {
+          if (!userCardRequest || userCardRequest.status !== 'approved') {
+            setCurrentView('student');
+          }
+        }}
       />
 
       <AddReviewModal

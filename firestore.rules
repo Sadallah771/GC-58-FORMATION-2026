@@ -40,6 +40,22 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Member card requests (Standard & Student cards)
+    match /card_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    // User visits points
+    match /user_points/{userId} {
+      allow read, write: if true;
+    }
+
+    // Broadcast notifications & announcements
+    match /notifications/{notifId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

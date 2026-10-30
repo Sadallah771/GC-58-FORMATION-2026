@@ -34,234 +34,252 @@ export const HomePortalGateways: React.FC<HomePortalGatewaysProps> = ({
   const isAr = language === 'ar';
   const activeTier = userLoyalty?.tier || 'STANDARD';
   const discountPercent = getTierDiscountPercent(activeTier);
+  const [expandedCard, setExpandedCard] = React.useState<string | null>(null);
+
+  const toggleDetails = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedCard(expandedCard === id ? null : id);
+  };
 
   return (
-    <section className="py-10 sm:py-16 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-      {/* Header title */}
-      <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-12">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs sm:text-sm font-bold uppercase tracking-wider mb-3">
-          <Layers className="w-4 h-4" />
-          <span>{isAr ? 'أقسام وفروع المنصة المنظمة' : 'Sections & Branches Dédiées'}</span>
-        </div>
-        <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-          {isAr ? 'اختر الفرع الذي تريده مباشرة' : 'Accédez Directement à Votre Section'}
+    <section className="py-8 sm:py-12 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      {/* Header title - Minimal */}
+      <div className="text-center max-w-2xl mx-auto mb-8">
+        <h2 className="text-xl sm:text-3xl font-black text-white tracking-tight">
+          {isAr ? 'أقسام المنصة الرئيسية' : 'Sections Principales'}
         </h2>
-        <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-          {isAr 
-            ? 'كل قسم منظم ومستقل بذاته: الدورات التدريبية وحدها، الدورة الهدية وحدها، وبطاقتك والمكافآت في فضاء خاص.' 
-            : 'Chaque section est indépendante et structurée pour une expérience fluide sur PC et Mobile.'}
+        <p className="text-xs text-slate-400 mt-1">
+          {isAr ? 'اختر القسم الذي تريده مباشرة' : 'Navigation simple et organisée'}
         </p>
       </div>
 
       {/* 4 Gateway Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
         {/* CARD 1: COURSES BRANCH */}
         <div 
           onClick={() => onNavigate('courses')}
-          className="group relative bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-3xl p-5 sm:p-7 transition-all duration-200 hover:shadow-2xl hover:shadow-amber-500/10 cursor-pointer flex flex-col justify-between overflow-hidden"
+          className="group relative bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-5 transition-all cursor-pointer flex flex-col justify-between"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all pointer-events-none" />
-
           <div>
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                <BookOpen className="w-6 h-6" />
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                <BookOpen className="w-5 h-5" />
               </div>
-              <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-bold text-xs flex items-center gap-1">
-                <Sparkles className="w-3 h-3" />
-                <span>{isAr ? '14+ دورة احترافية' : '14+ Formations Pro'}</span>
-              </span>
+              <span className="text-[11px] font-bold text-amber-400 font-mono">14+ {isAr ? 'دورة' : 'cours'}</span>
             </div>
 
-            <h3 className="text-lg sm:text-2xl font-black text-white group-hover:text-amber-400 transition-colors mb-2">
-              {isAr ? 'فرع الدورات التدريبية المعتمدة 🎓' : 'Catalogue des Formations 🎓'}
+            <h3 className="text-base sm:text-lg font-black text-white group-hover:text-amber-400 transition-colors mb-1.5">
+              {isAr ? 'الدورات التدريبية المعتمدة 🎓' : 'Formations Spécialisées 🎓'}
             </h3>
 
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4">
+            <p className="text-xs text-slate-400 mb-3">
               {isAr 
-                ? 'استعراض كافة دورات الخرسانة المسلحة (Béton Armé)، المنشآت المعدنية (Charpente)، وحساب الطرقات وVRD، مع فلاتر البرامج (Robot, ETABS, Tekla, Covadis).'
-                : 'Formations complètes en Génie Civil avec vidéos HD, études de cas réels et calculs aux normes.'}
+                ? 'دورات الخرسانة المسلحة، المنشآت المعدنية، وحساب الطرقات.' 
+                : 'Béton Armé, Charpente Métallique, et Routes & VRD.'}
             </p>
 
-            <div className="space-y-1.5 text-xs text-slate-300 mb-6">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{isAr ? 'عرض 50 ساعة: أسعار خاصة تبدأ من 3000 دج' : 'Offre 50h : Prix dès 3 000 DA'}</span>
+            {/* Expandable Details */}
+            {expandedCard === 'courses' && (
+              <div className="p-3 mb-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1.5 animate-in fade-in duration-200">
+                <p>• برامج: Robot, ETABS, Tekla, AutoCAD GC, Covadis.</p>
+                <p>• مشاريع واقعية مدروسة وفق معايير CTC الجزائري (RPA 2024 / CCM 97).</p>
+                <p>• تخفيض بطاقتك الحالي: {discountPercent}% محسوب تلقائياً في السلة.</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Percent className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>
-                  {isAr 
-                    ? `تخفيض بطاقتك الحالي: ${discountPercent}% محسوب تلقائياً` 
-                    : `Votre réduction carte : ${discountPercent}%`}
-                </span>
-              </div>
-            </div>
+            )}
           </div>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onNavigate('courses');
-            }}
-            className="w-full py-3 sm:py-3.5 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all active:scale-95 cursor-pointer"
-          >
-            <span>{isAr ? 'دخول قسم الدورات التدريبية' : 'Consulter les formations'}</span>
-            <ArrowRight className={`w-4 h-4 ${isAr ? 'rotate-180' : ''}`} />
-          </button>
+          <div className="space-y-2 pt-2">
+            <button
+              type="button"
+              onClick={(e) => toggleDetails('courses', e)}
+              className="text-[11px] font-bold text-slate-400 hover:text-amber-400 flex items-center gap-1 cursor-pointer"
+            >
+              <span>{expandedCard === 'courses' ? (isAr ? 'إخفاء التفاصيل ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل ▾' : 'Plus de détails ▾')}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate('courses');
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <span>{isAr ? 'دخول قسم الدورات' : 'Consulter les formations'}</span>
+              <ArrowRight className={`w-3.5 h-3.5 ${isAr ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
         </div>
 
         {/* CARD 2: GIFT COURSE BRANCH */}
         <div 
           onClick={() => onNavigate('gift')}
-          className="group relative bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-amber-400/50 rounded-3xl p-5 sm:p-7 transition-all duration-200 hover:shadow-2xl hover:shadow-amber-400/10 cursor-pointer flex flex-col justify-between overflow-hidden"
+          className="group relative bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-amber-400/50 rounded-2xl p-5 transition-all cursor-pointer flex flex-col justify-between"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl group-hover:bg-amber-400/20 transition-all pointer-events-none" />
-
           <div>
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500/20 to-yellow-500/20 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                <Gift className="w-6 h-6 animate-pulse" />
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                <Gift className="w-5 h-5" />
               </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold text-xs flex items-center gap-1">
-                <span>{isAr ? '🎁 هدية مجانية 100%' : '🎁 Offert 100% Gratuit'}</span>
-              </span>
+              <span className="text-[11px] font-bold text-emerald-400 font-mono">{isAr ? 'مجانية 100%' : '100% Gratuit'}</span>
             </div>
 
-            <h3 className="text-lg sm:text-2xl font-black text-white group-hover:text-amber-400 transition-colors mb-2">
-              {isAr ? 'فرع الدورة الهدية المجانية 🎁' : 'Formation Offerte en Cadeau 🎁'}
+            <h3 className="text-base sm:text-lg font-black text-white group-hover:text-amber-400 transition-colors mb-1.5">
+              {isAr ? 'الدورة الهدية المجانية 🎁' : 'Formation Offerte 🎁'}
             </h3>
 
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4">
+            <p className="text-xs text-slate-400 mb-3">
               {isAr 
-                ? 'فضاء مستقل ومخصص لمشاهدة دورة الإهداء المجانية بالكامل من منصة GC58 مع مشغل الفيديوهات والحلقات المنظمة دون أي تشتيت.' 
-                : 'Accédez à votre formation offerte complète avec lecteur vidéo dédié et épisodes structurés.'}
+                ? 'فضاء مستقل لمشاهدة دورة الإهداء المجانية بالكامل بمشغل فيديو مخصص.' 
+                : 'Accédez à votre formation offerte avec lecteur vidéo HD dédié.'}
             </p>
 
-            <div className="space-y-1.5 text-xs text-slate-300 mb-6">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{isAr ? 'حلقات منظمة وشاملة في الهندسة المدنية' : 'Épisodes organisés en Génie Civil'}</span>
+            {/* Expandable Details */}
+            {expandedCard === 'gift' && (
+              <div className="p-3 mb-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1.5 animate-in fade-in duration-200">
+                <p>• حلقات مسجلة بجودة عالية ومرفوعة على Google Drive.</p>
+                <p>• فك التشفير بكود سري يمنحه لك الأدمين مجاناً عند الطلب.</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>{isAr ? 'فك التشفير بالكود السري أو المشاهدة المباشرة' : 'Accès par code secret ou direct'}</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onNavigate('gift');
-            }}
-            className="w-full py-3 sm:py-3.5 px-4 rounded-2xl bg-slate-950 hover:bg-slate-900 border border-amber-500/40 text-amber-300 hover:text-amber-200 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-          >
-            <span>{isAr ? 'دخول فضاء الدورة الهدية' : 'Accéder au Cadeau'}</span>
-            <Gift className="w-4 h-4 text-amber-400" />
-          </button>
+          <div className="space-y-2 pt-2">
+            <button
+              type="button"
+              onClick={(e) => toggleDetails('gift', e)}
+              className="text-[11px] font-bold text-slate-400 hover:text-amber-400 flex items-center gap-1 cursor-pointer"
+            >
+              <span>{expandedCard === 'gift' ? (isAr ? 'إخفاء التفاصيل ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل ▾' : 'Plus de détails ▾')}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate('gift');
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-850 border border-amber-500/40 text-amber-300 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <span>{isAr ? 'مشاهدة الدورة الهدية' : 'Accéder au Cadeau'}</span>
+              <Gift className="w-3.5 h-3.5 text-amber-400" />
+            </button>
+          </div>
         </div>
 
         {/* CARD 3: STUDENT & VIP CARD BRANCH */}
         <div 
           onClick={() => onNavigate('student')}
-          className="group relative bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-3xl p-5 sm:p-7 transition-all duration-200 hover:shadow-2xl hover:shadow-amber-500/10 cursor-pointer flex flex-col justify-between overflow-hidden"
+          className="group relative bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-5 transition-all cursor-pointer flex flex-col justify-between"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all pointer-events-none" />
-
           <div>
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                <Crown className="w-6 h-6" />
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center">
+                <Crown className="w-5 h-5" />
               </div>
-              <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-mono font-bold text-xs border border-amber-500/30">
-                GC58 PRO CARD
+              <span className="text-[11px] font-bold text-amber-300 font-mono">
+                {userLoyalty?.hasActiveCard ? `${activeTier}` : (isAr ? 'طلب مجاني' : 'Gratuit')}
               </span>
             </div>
 
-            <h3 className="text-lg sm:text-2xl font-black text-white group-hover:text-amber-400 transition-colors mb-2">
-              {isAr ? 'فرع بطاقة الطالب ونسب التخفيض 💳' : 'Ma Carte PRO & Réductions 💳'}
+            <h3 className="text-base sm:text-lg font-black text-white group-hover:text-amber-400 transition-colors mb-1.5">
+              {isAr ? 'بطاقة الطالب والعضوية 💳' : 'Carte Adhérent & Étudiant 💳'}
             </h3>
 
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4">
+            <p className="text-xs text-slate-400 mb-3">
               {isAr 
-                ? 'فضاء العضو الرسمي: تفاصيل بطاقتك (Standard 10%، Silver 20%، Golden 30%)، ومتابعة عداد الدورات للاستفادة من كامل المزايا.' 
-                : 'Consultez votre carte de fidélité, vos réductions personnalisées et votre progression.'}
+                ? 'اطلب بطاقتك مجاناً (طالب 20% أو Standard 10%) دون الحاجة لشراء دورة.' 
+                : 'Demandez votre carte gratuitement (Étudiant 20% ou Standard 10%) sans achat.'}
             </p>
 
-            <div className="space-y-1.5 text-xs text-slate-300 mb-6">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{isAr ? 'تخفيضات تصاعدية من 10% إلى 30% على كل دورة' : 'Réductions cumulables de 10% à 30%'}</span>
+            {/* Expandable Details */}
+            {expandedCard === 'card' && (
+              <div className="p-3 mb-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1.5 animate-in fade-in duration-200">
+                <p>• بطاقة طالب جامعي: تمنح مميزات فئة البرو (20% تخفيض) بعد رفع صورة البطاقة الجامعية.</p>
+                <p>• بطاقة ستاندار: تمنح 10% تخفيض فوري بعد اعتمادها من الأدمين.</p>
+                <p>• ترقيات آلية في الرتب حسب نقاط زيارات الموقع (1000 نقطة PRO، 5000 Silver، 10000 Gold).</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>{isAr ? 'أولوية الاستشارات الهندسية لحاملي البطاقة الذهبية' : 'Consultations prioritaires pour les membres Golden'}</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onNavigate('student');
-            }}
-            className="w-full py-3 sm:py-3.5 px-4 rounded-2xl bg-slate-950 hover:bg-slate-900 border border-slate-700 text-slate-200 hover:text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-          >
-            <span>{isAr ? 'فتح فضاء بطاقتي الشخصية' : 'Ouvrir Ma Carte PRO'}</span>
-            <Crown className="w-4 h-4 text-amber-400" />
-          </button>
+          <div className="space-y-2 pt-2">
+            <button
+              type="button"
+              onClick={(e) => toggleDetails('card', e)}
+              className="text-[11px] font-bold text-slate-400 hover:text-amber-400 flex items-center gap-1 cursor-pointer"
+            >
+              <span>{expandedCard === 'card' ? (isAr ? 'إخفاء التفاصيل ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل ▾' : 'Plus de détails ▾')}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate('student');
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <span>
+                {userLoyalty?.hasActiveCard 
+                  ? (isAr ? 'عرض بطاقتي المعتمدة 🎓' : 'Voir ma carte') 
+                  : userLoyalty?.cardStatus === 'pending'
+                  ? (isAr ? 'طلب بطاقتي (قيد المراجعة ⏳)' : 'En attente ⏳')
+                  : (isAr ? 'طلب بطاقتي مجاناً 💳' : 'Demander ma carte 💳')}
+              </span>
+              <Crown className="w-3.5 h-3.5 text-slate-950" />
+            </button>
+          </div>
         </div>
 
         {/* CARD 4: EXCEL SHEETS, BOOKS & ASSISTANCE */}
         <div 
           onClick={() => onNavigate('student')}
-          className="group relative bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-3xl p-5 sm:p-7 transition-all duration-200 hover:shadow-2xl hover:shadow-emerald-500/10 cursor-pointer flex flex-col justify-between overflow-hidden"
+          className="group relative bg-slate-900/90 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-5 transition-all cursor-pointer flex flex-col justify-between"
         >
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all pointer-events-none" />
-
           <div>
-            <div className="flex items-center justify-between gap-3 mb-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
-                <FileSpreadsheet className="w-6 h-6" />
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center">
+                <FileSpreadsheet className="w-5 h-5" />
               </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-bold text-xs flex items-center gap-1">
-                <span>{isAr ? 'شرط 14 دورة للدعم الكامل' : '14 Formations pour Support VIP'}</span>
-              </span>
+              <span className="text-[11px] font-bold text-emerald-400 font-mono">14 {isAr ? 'دورة للذهبي' : 'cours'}</span>
             </div>
 
-            <h3 className="text-lg sm:text-2xl font-black text-white group-hover:text-emerald-400 transition-colors mb-2">
-              {isAr ? 'شيتات الإكسل والكتب ومساعدة العملاء 📁' : 'Feuilles Excel & Support Technique 📁'}
+            <h3 className="text-base sm:text-lg font-black text-white group-hover:text-emerald-400 transition-colors mb-1.5">
+              {isAr ? 'الشيتات والملفات والمساعدة 📁' : 'Feuilles Excel & Fichiers 📁'}
             </h3>
 
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed mb-4">
+            <p className="text-xs text-slate-400 mb-3">
               {isAr 
-                ? 'مكتبة هندسية ضخمة: ملفات إكسل احترافية لحساب الأعمدة والأساسات والكميات، مذكرات التخرج، وكتب الكودات الجزائرية مع المساعدة المباشرة.' 
-                : 'Bibliothèque de feuilles Excel de calcul, livres de normes algériennes (RPA/CBA) et assistance.'}
+                ? 'تحميل شيتات الإكسل، ملفات المشاريع، ومساعدة تسطيب وتفعيل البرامج.' 
+                : 'Feuilles de calcul Excel, modèles de projets et support installation.'}
             </p>
 
-            <div className="space-y-1.5 text-xs text-slate-300 mb-6">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                <span>{isAr ? 'ملفات إكسل جاهزة ومجربة في مكاتب الدراسات' : 'Feuilles de calcul testées en bureaux d’études'}</span>
+            {/* Expandable Details */}
+            {expandedCard === 'files' && (
+              <div className="p-3 mb-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1.5 animate-in fade-in duration-200">
+                <p>• شيتات إكسل حسابية لحساب الأعمدة، الأساسات، والكميات.</p>
+                <p>• مذكرات تخرج، نماذج 3D، وكتب الكودات الجزائرية.</p>
+                <p>• شرط المستوى الذهبي (14 دورة) لفتح الدعم الفني الكامل وتسطيب البرامج.</p>
               </div>
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
-                <span>{isAr ? 'المساعدة الهندسية المباشرة تتاح للمشتركين بـ 14 دورة' : 'Support technique complet à partir de 14 formations'}</span>
-              </div>
-            </div>
+            )}
           </div>
 
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onNavigate('student');
-            }}
-            className="w-full py-3 sm:py-3.5 px-4 rounded-2xl bg-slate-950 hover:bg-slate-900 border border-emerald-500/40 text-emerald-300 hover:text-emerald-200 font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
-          >
-            <span>{isAr ? 'استعراض الشيتات وشروط التأهيل' : 'Consulter les fichiers & éligibilité'}</span>
-            <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
-          </button>
+          <div className="space-y-2 pt-2">
+            <button
+              type="button"
+              onClick={(e) => toggleDetails('files', e)}
+              className="text-[11px] font-bold text-slate-400 hover:text-emerald-400 flex items-center gap-1 cursor-pointer"
+            >
+              <span>{expandedCard === 'files' ? (isAr ? 'إخفاء التفاصيل ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل ▾' : 'Plus de détails ▾')}</span>
+            </button>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onNavigate('student');
+              }}
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-850 border border-emerald-500/40 text-emerald-300 font-black text-xs flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <span>{isAr ? 'فتح الشيتات والمساعدة' : 'Consulter les fichiers'}</span>
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
+            </button>
+          </div>
         </div>
       </div>
     </section>

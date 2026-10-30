@@ -18,12 +18,14 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   language: Language;
+  onSuccessRedirect?: () => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
   language,
+  onSuccessRedirect,
 }) => {
   const { loginGoogle, loginEmail, registerEmail, loginAsMasterAdmin } = useAuth();
   const isAr = language === 'ar';
@@ -43,9 +45,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     try {
       await loginGoogle(email.trim() || undefined, displayName.trim() || undefined);
       onClose();
+      if (onSuccessRedirect) onSuccessRedirect();
     } catch {
       await loginAsMasterAdmin();
       onClose();
+      if (onSuccessRedirect) onSuccessRedirect();
     } finally {
       setLoading(false);
     }
@@ -63,6 +67,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         await registerEmail(email.trim(), password, displayName.trim());
       }
       onClose();
+      if (onSuccessRedirect) onSuccessRedirect();
     } catch (err: any) {
       console.error(err);
       const code = err?.code || '';
@@ -121,6 +126,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               ? 'تابع تقدمك في الدورات واحصل على شهاداتك وملفات العمل'
               : 'Accédez à votre espace pédagogique et vos projets de calcul'}
           </p>
+        </div>
+
+        {/* Free Card Notice - No Course Purchase Required */}
+        <div className="mb-5 p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border border-amber-500/30 text-amber-200 text-xs text-center flex items-center justify-center gap-2">
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+          <span>
+            {isAr
+              ? 'التسجيل مجاني 100% ويمنحك حق طلب بطاقتك (طالب 20% أو Standard 10%) ليصادق عليها الأدمين مباشرة دون الحاجة لشراء أي دورة!'
+              : 'Inscription 100% gratuite : demandez votre carte officielle validée directement par l’admin sans obligation d’achat !'}
+          </span>
         </div>
 
         {errorMsg && (

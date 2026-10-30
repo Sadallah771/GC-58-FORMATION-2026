@@ -299,6 +299,11 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
                 ? 'تحقق من مطابقة اسم الطالب الحقيقي مع صورة بطاقة الطالب الجامعية المرفوعة واضغط "قبول وتفعيل البطاقة".'
                 : 'Vérifiez la concordance du nom réel avec la carte d’étudiant et validez.'}
             </p>
+            <p className="text-xs text-amber-300/90 font-medium mt-1">
+              {isAr
+                ? '💡 يمكن لأي مسجل في الموقع طلب بطاقة طالب أو ستاندار دون الحاجة لشراء أي دورة. اضغط "قبول وتفعيل البطاقة فوراً" لاعتمادها وتفعيل التخفيضات له مباشرة.'
+                : 'Les membres peuvent demander leur carte sans achat de formation. Validez pour activer leur réduction.'}
+            </p>
           </div>
 
           {/* Filter tabs for card requests */}
@@ -495,6 +500,16 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
                         className="py-2 px-3 rounded-xl bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 font-bold text-xs transition-colors cursor-pointer"
                       >
                         {isAr ? 'رفض' : 'Rejeter'}
+                      </button>
+                    )}
+
+                    {req.status === 'approved' && (
+                      <button
+                        type="button"
+                        onClick={() => req.id && handleRejectCard(req.id, req.fullName)}
+                        className="py-1.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-rose-300 font-bold text-xs transition-colors cursor-pointer"
+                      >
+                        {isAr ? 'إلغاء التفعيل 🚫' : 'Révoquer'}
                       </button>
                     )}
 

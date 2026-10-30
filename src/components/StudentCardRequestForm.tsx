@@ -60,6 +60,7 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
   const [editName, setEditName] = useState(existingRequest?.customCardName || existingRequest?.fullName || userName || '');
   const [editPhone, setEditPhone] = useState(existingRequest?.phone || '');
   const [saveEditSuccess, setSaveEditSuccess] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Phone validation (exact 10 digits starting with 0)
   const validatePhone = (p: string) => {
@@ -67,6 +68,20 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
     const regex = /^0[567][0-9]{8}$/;
     return regex.test(clean);
   };
+
+  // Sync user credentials when logged in or updated
+  React.useEffect(() => {
+    if (userEmail) setEmail(userEmail);
+    if (userName && !fullName) setFullName(userName);
+  }, [userEmail, userName]);
+
+  // Sync edit state when existingRequest changes
+  React.useEffect(() => {
+    if (existingRequest) {
+      setEditName(existingRequest.customCardName || existingRequest.fullName || userName || '');
+      setEditPhone(existingRequest.customPhone || existingRequest.phone || '');
+    }
+  }, [existingRequest, userName]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -200,28 +215,56 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
   // If user is not logged in: must be signed in to request card
   if (!userEmail) {
     return (
-      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800 space-y-4 text-center">
-        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto">
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-900 border border-amber-500/30 space-y-3 text-center">
+        <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto shadow-md">
           <CreditCard className="w-6 h-6" />
         </div>
         <div>
-          <h3 className="text-base font-black text-white">
-            {isAr ? 'طلب بطاقة العضوية الرسمية (طالب أو ستوندار)' : 'Demande de Carte d’Adhérent'}
+          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 inline-block mb-1.5">
+            {isAr ? '🎁 مجاناً 100% - دون شراء دورة' : '100% Gratuit - Sans achat'}
+          </span>
+          <h3 className="text-base sm:text-lg font-black text-white">
+            {isAr ? 'سجل حسابك واطلب بطاقتك مباشرة' : 'Créez votre compte et demandez votre carte'}
           </h3>
-          <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+          <p className="text-xs text-slate-400 mt-1">
             {isAr
-              ? 'يجب تسجيل الدخول بحسابك أولاً لطلب البطاقة وربطها باسمك وعضويتك ونقاط زياراتك.'
-              : 'Veuillez vous connecter pour faire une demande de carte et la lier à votre compte.'}
+              ? 'بطاقة ستاندار (10%) أو بطاقة طالب جامعي (20%) متاحة مجاناً وتعتمد فوراً من الأدمين.'
+              : 'Carte Standard (10%) ou Étudiant (20%) gratuite après validation.'}
           </p>
         </div>
-        {onOpenAuth && (
+
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
+          {onOpenAuth && (
+            <button
+              onClick={onOpenAuth}
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-black text-xs inline-flex items-center gap-2 cursor-pointer shadow-md hover:scale-105 transition-all"
+            >
+              <LogIn className="w-3.5 h-3.5 text-slate-950" />
+              <span>{isAr ? 'تسجيل الدخول / فتح حساب' : 'Connexion / Inscription'}</span>
+            </button>
+          )}
           <button
-            onClick={onOpenAuth}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-bold text-xs inline-flex items-center gap-2 cursor-pointer shadow-md"
+            type="button"
+            onClick={() => setShowDetails(!showDetails)}
+            className="text-xs font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
           >
-            <LogIn className="w-4 h-4" />
-            <span>{isAr ? 'تسجيل الدخول لطلب البطاقة' : 'Se connecter'}</span>
+            {showDetails ? (isAr ? 'إخفاء التفاصيل ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل ▾' : 'Détails ▾')}
           </button>
+        </div>
+
+        {showDetails && (
+          <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-xs text-slate-300 text-right space-y-2 animate-fadeIn mt-2">
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              {isAr
+                ? '• بطاقة ستاندار: تمنحك تخفيض 10% فوري على كل الدورات وتجميع نقاط الزيارات.'
+                : '• Carte Standard : 10% de remise immédiate et cumul de points.'}
+            </p>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              {isAr
+                ? '• بطاقة طالب جامعي: تمنحك تخفيض 20% (مميزات PRO كاملة) وتتطلب فقط رفع صورة بطاقة الطالب الخاصة بك لنفس الاسم.'
+                : '• Carte Étudiant : 20% de remise (statut PRO) sur justificatif étudiant.'}
+            </p>
+          </div>
         )}
       </div>
     );
@@ -332,27 +375,32 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
   // If request is pending validation by admin
   if (existingRequest?.status === 'pending') {
     return (
-      <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/90 border border-amber-500/30 space-y-4">
-        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-3">
-          <div className="flex items-center gap-2.5 font-black text-sm sm:text-base">
-            <Clock className="w-5 h-5 text-amber-400 animate-spin" />
-            <span>
-              {isAr 
-                ? `طلبك (${existingRequest.tierRequested === 'STUDENT' ? 'بطاقة طالب جامعي 🎓' : 'بطاقة ستوندار 💳'}) قيد التدقيق الإداري والمطابقة` 
-                : 'Demande de carte en cours de validation'}
-            </span>
+      <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/90 border border-amber-500/30 space-y-3">
+        <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-300 space-y-2">
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-2 font-black text-xs sm:text-sm">
+              <Clock className="w-4 h-4 text-amber-400 animate-spin shrink-0" />
+              <span>
+                {isAr 
+                  ? `طلبك (${existingRequest.tierRequested === 'STUDENT' ? 'طالب جامعي 🎓' : 'ستوندار 💳'}) في انتظار مصادقة الأدمين` 
+                  : 'Demande en cours de validation'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDetails(!showDetails)}
+              className="text-[11px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+            >
+              {showDetails ? (isAr ? 'إخفاء' : 'Fermer') : (isAr ? 'مزيد من التفاصيل ▾' : 'Détails ▾')}
+            </button>
           </div>
-          <p className="text-xs text-amber-200/90 leading-relaxed">
-            {isAr
-              ? `لقد تم استلام طلبك بنجاح باسم: "${existingRequest.customCardName || existingRequest.fullName}". الإدارة تقوم بمطابقة الاسم والبيانات. بمجرد موافقة الأدمين، ستصبح البطاقة مفعلة مباشرة في حسابك.`
-              : 'Votre demande est en cours d’examen par l’administration. La carte sera activée dès validation.'}
-          </p>
-          <div className="p-3 rounded-2xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
-            <span>{isAr ? 'حالة الطلب:' : 'Statut :'}</span>
-            <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold font-mono">
-              {isAr ? 'في انتظار مصادقة الأدمين ⏳' : 'En attente'}
-            </span>
-          </div>
+          {showDetails && (
+            <p className="text-[11px] text-amber-200/90 leading-relaxed pt-2 border-t border-amber-500/20">
+              {isAr
+                ? `تم استلام طلبك باسم: "${existingRequest.customCardName || existingRequest.fullName}". الإدارة تدقق البيانات وسيتم تفعيل التخفيض تلقائياً فور الموافقة دون الحاجة لشراء أي دورة.`
+                : 'Votre demande est en cours de traitement par l’administrateur.'}
+            </p>
+          )}
         </div>
 
         {/* Edit name & phone even during pending */}
@@ -427,28 +475,23 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
   }
 
   return (
-    <div className="p-5 sm:p-7 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-6">
+    <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 space-y-4">
       <div>
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-black mb-2">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 text-[11px] font-black mb-1.5">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>{isAr ? 'طلب بطاقة العضوية والخصومات (متاحة للجميع مجاناً)' : 'Demande de Carte d’Adhérent'}</span>
+          <span>{isAr ? 'طلب بطاقة العضوية والخصومات (مجاناً 100%)' : 'Demande de Carte (Gratuite)'}</span>
         </div>
-        <h3 className="text-base sm:text-xl font-black text-white">
-          {isAr ? 'سجل واحصل على بطاقتك المعتمدة دون الحاجة لشراء دورة' : 'Obtenez votre carte sans achat préalable'}
+        <h3 className="text-sm sm:text-base font-black text-white">
+          {isAr ? 'اختر بطاقتك وسيقوم الأدمين بمصادقتها دون شراء دورة' : 'Choisissez votre carte sans achat préalable'}
         </h3>
-        <p className="text-xs text-slate-400 mt-1">
-          {isAr
-            ? 'اختر نوع البطاقة: بطاقة طالب جامعي (مميزات فئة البرو 20%) أو بطاقة Standard (10%). البطاقة تُفعل بعد تدقيق ومصادقة الأدمين.'
-            : 'Choisissez votre formule : Carte Étudiant (avantages PRO 20%) ou Standard (10%).'}
-        </p>
       </div>
 
       {successMsg && (
-        <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+        <div className="p-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           <span>
             {isAr 
-              ? 'تم إرسال طلب البطاقة بنجاح! سيقوم الأدمين بمطابقة الاسم والموافقة عليها قريباً.' 
+              ? 'تم إرسال طلب البطاقة بنجاح! سيقوم الأدمين بالمصادقة عليها قريباً.' 
               : 'Demande envoyée avec succès !'}
           </span>
         </div>
@@ -459,54 +502,50 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
         <button
           type="button"
           onClick={() => setSelectedTier('STUDENT')}
-          className={`p-4 rounded-2xl border text-right transition-all cursor-pointer relative overflow-hidden ${
+          className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer relative overflow-hidden ${
             selectedTier === 'STUDENT'
-              ? 'bg-gradient-to-br from-emerald-950/60 via-slate-900 to-emerald-950/40 border-emerald-500/60 shadow-lg shadow-emerald-500/10'
+              ? 'bg-gradient-to-br from-emerald-950/60 via-slate-900 to-emerald-950/40 border-emerald-500/60 shadow-md shadow-emerald-500/10'
               : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 opacity-80'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <GraduationCap className="w-5 h-5" />
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+              <GraduationCap className="w-4 h-4" />
             </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">
-              {isAr ? 'مميزات الـ PRO (تخفيض 20%)' : 'Avantages PRO 20%'}
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[10px]">
+              {isAr ? 'تخفيض 20% (PRO)' : '20% PRO'}
             </span>
           </div>
-          <h4 className="text-sm font-black text-white mb-1">
-            {isAr ? 'بطاقة طالب جامعي 🎓 (Carte Étudiant)' : 'Carte Étudiant BTP 🎓'}
+          <h4 className="text-xs sm:text-sm font-black text-white mb-0.5">
+            {isAr ? 'بطاقة طالب جامعي 🎓' : 'Carte Étudiant 🎓'}
           </h4>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            {isAr 
-              ? 'مخصصة للطلبة - تخفيض 20% وكتب ومذكرات تخرج مجانية (تتطلب رفع صورة بطاقة الطالب لنفس الاسم).' 
-              : '20% de remise et livres gratuits (photo de carte requise).'}
+          <p className="text-[11px] text-slate-400">
+            {isAr ? 'مميزات PRO كاملة (تتطلب رفع صورة بطاقة الطالب لنفس الاسم).' : 'Avantages PRO (justificatif requis).'}
           </p>
         </button>
 
         <button
           type="button"
           onClick={() => setSelectedTier('STANDARD')}
-          className={`p-4 rounded-2xl border text-right transition-all cursor-pointer relative overflow-hidden ${
+          className={`p-3.5 rounded-2xl border text-right transition-all cursor-pointer relative overflow-hidden ${
             selectedTier === 'STANDARD'
-              ? 'bg-gradient-to-br from-amber-950/40 via-slate-900 to-amber-950/20 border-amber-500/60 shadow-lg shadow-amber-500/10'
+              ? 'bg-gradient-to-br from-amber-950/40 via-slate-900 to-amber-950/20 border-amber-500/60 shadow-md shadow-amber-500/10'
               : 'bg-slate-950/60 border-slate-800 hover:border-slate-700 opacity-80'
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
-              <CreditCard className="w-5 h-5" />
+          <div className="flex items-center justify-between mb-1.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+              <CreditCard className="w-4 h-4" />
             </div>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px]">
-              {isAr ? 'تخفيض 10%' : '10% Réduction'}
+            <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px]">
+              {isAr ? 'تخفيض 10%' : '10%'}
             </span>
           </div>
-          <h4 className="text-sm font-black text-white mb-1">
-            {isAr ? 'بطاقة ستوندار 💳 (GC58 Standard)' : 'Carte Standard 💳'}
+          <h4 className="text-xs sm:text-sm font-black text-white mb-0.5">
+            {isAr ? 'بطاقة ستوندار 💳' : 'Carte Standard 💳'}
           </h4>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            {isAr 
-              ? 'متاحة للجميع دون شراء - تخفيض 10%، الدورة الهدية والكتب المرفوعة في الموقع.' 
-              : 'Accessible à tous sans achat préalable (10% de remise).'}
+          <p className="text-[11px] text-slate-400">
+            {isAr ? 'تخفيض 10% فوري ومتاحة للجميع مجاناً دون شروط.' : '10% de remise immédiate pour tous.'}
           </p>
         </button>
       </div>

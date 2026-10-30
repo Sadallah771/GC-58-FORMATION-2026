@@ -50,6 +50,7 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
   const [activeTab, setActiveTab] = useState<'card' | 'points' | 'stamps' | 'perks'>('card');
   const [showPerksModal, setShowPerksModal] = useState(false);
   const [selectedTierPreview, setSelectedTierPreview] = useState<LoyaltyTier>(loyalty.tier);
+  const [expandedPerkId, setExpandedPerkId] = useState<string | null>(null);
 
   // Total possible stamp slots (14 civil engineering courses in GC58)
   const TOTAL_STAMPS = 14;
@@ -586,33 +587,47 @@ export const LoyaltyCardPro: React.FC<LoyaltyCardProProps> = ({
                       </span>
 
                       <div className="space-y-2">
-                        {prevDetails.perks.map((perk) => (
-                          <div 
-                            key={perk.id}
-                            className={`p-3 rounded-xl border flex items-start gap-3 transition-all ${
-                              perk.isHighlight
-                                ? 'bg-amber-500/10 border-amber-500/30 text-slate-200'
-                                : 'bg-slate-900/60 border-slate-800/80 text-slate-300'
-                            }`}
-                          >
-                            <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                              <Check className="w-3.5 h-3.5" />
+                        {prevDetails.perks.map((perk) => {
+                          const isExpanded = expandedPerkId === perk.id;
+                          return (
+                            <div 
+                              key={perk.id}
+                              className={`p-3 rounded-xl border transition-all ${
+                                perk.isHighlight
+                                  ? 'bg-amber-500/10 border-amber-500/30 text-slate-200'
+                                  : 'bg-slate-900/60 border-slate-800/80 text-slate-300'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                                    <Check className="w-3.5 h-3.5" />
+                                  </div>
+                                  <h6 className="text-xs font-bold text-white flex items-center gap-2">
+                                    <span>{isAr ? perk.titleAr : perk.titleFr}</span>
+                                    {perk.isHighlight && (
+                                      <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500 text-slate-950">
+                                        {isAr ? 'ميزة حصرية' : 'Exclusif'}
+                                      </span>
+                                    )}
+                                  </h6>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedPerkId(isExpanded ? null : perk.id)}
+                                  className="text-[10px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer shrink-0"
+                                >
+                                  {isExpanded ? (isAr ? 'إخفاء' : 'Fermer') : (isAr ? 'تفاصيل ▾' : 'Détails ▾')}
+                                </button>
+                              </div>
+                              {isExpanded && (
+                                <p className="text-[11px] text-slate-400 leading-relaxed pt-2 mt-2 border-t border-slate-800/60 pr-7">
+                                  {isAr ? perk.descAr : perk.descFr}
+                                </p>
+                              )}
                             </div>
-                            <div className="space-y-0.5">
-                              <h6 className="text-xs font-bold text-white flex items-center gap-2">
-                                <span>{isAr ? perk.titleAr : perk.titleFr}</span>
-                                {perk.isHighlight && (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-500 text-slate-950">
-                                    {isAr ? 'ميزة حصرية' : 'Exclusif'}
-                                  </span>
-                                )}
-                              </h6>
-                              <p className="text-[11px] text-slate-400 leading-relaxed">
-                                {isAr ? perk.descAr : perk.descFr}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

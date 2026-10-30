@@ -9,7 +9,8 @@ import {
   User,
   CreditCard,
   Sparkles,
-  Info
+  Info,
+  ShieldCheck
 } from 'lucide-react';
 import { Course, CourseCategory, Language, ClientLoyaltyData } from '../types';
 import { COURSES_DATA } from '../data/coursesData';
@@ -37,6 +38,7 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<'all' | CourseCategory>('all');
   const [selectedSoftware, setSelectedSoftware] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showCatalogDetails, setShowCatalogDetails] = useState<boolean>(false);
 
   const isAr = language === 'ar';
 
@@ -93,95 +95,80 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
         </div>
       </div>
 
-      {/* Reassurance Banner in Catalog */}
-      <div className="mb-4 p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-md">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-          <span>
-            {isAr
-              ? '💡 تنبيه: تصفح كل الدورات متاح للجميع من هنا. عند النقر على "طلب الدورة"، يتم تسجيلك تسجيل أولي واستفساري فقط دون أي التزام مالي أو دفع فوري!'
-              : '💡 Note : Vous pouvez consulter librement tous les cours. Cliquer sur "Commander" est une pré-inscription sans engagement ni paiement immédiat.'}
-          </span>
-        </div>
-        <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30 shrink-0">
-          {isAr ? 'تخفيض 50 ساعة' : 'Promo 50h'}
-        </span>
-      </div>
-
-      {/* Member Card Status Banner in Catalog */}
+      {/* Sleek 1-Line Reassurance & Membership Bar with Expandable Details */}
       {(() => {
         const hasCard = Boolean(userLoyalty?.hasActiveCard);
         const activeTier = userLoyalty?.tier || 'STANDARD';
         const activeTierPercent = getTierDiscountPercent(activeTier, hasCard);
         const activeTierName = getTierNameAr(activeTier);
 
-        if (!hasCard) {
-          return (
-            <div className="mb-6 p-4 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-amber-400 shrink-0 border border-slate-700">
-                  <CreditCard className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs sm:text-sm font-bold text-white">
-                      {isAr ? 'لم تقم بطلب بطاقة العضوية بعد (أو بانتظار مصادقة الإدارة)' : 'Aucune carte validée'}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
-                      {isAr ? 'متاحة للجميع مجاناً' : 'Gratuite'}
-                    </span>
+        return (
+          <div className="mb-6 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-md overflow-hidden">
+            <div className="p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                <span className="text-xs sm:text-sm font-bold text-white">
+                  {hasCard
+                    ? (isAr ? `بطاقتك معتمدة (${activeTierName}): تخفيض -${activeTierPercent}% على كل الدورات` : `Carte validée (${activeTier}) : -${activeTierPercent}%`)
+                    : (isAr ? '💡 تصفح واطلب أي دورة بدون التزام مالي مسبق' : '💡 Consultez et commandez sans engagement')}
+                </span>
+                {!hasCard && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold shrink-0">
+                    {isAr ? 'بطاقة مجانية متاحة' : 'Gratuit'}
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowCatalogDetails(!showCatalogDetails)}
+                className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer shrink-0"
+              >
+                <span>{showCatalogDetails ? (isAr ? 'إخفاء التفاصيل ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل والخصومات ▾' : 'Détails & remises ▾')}</span>
+              </button>
+            </div>
+
+            {/* Expandable Details Section */}
+            {showCatalogDetails && (
+              <div className="p-4 bg-slate-950 border-t border-slate-800/80 space-y-3 animate-fadeIn">
+                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 space-y-1">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                    <ShieldCheck className="w-4 h-4 shrink-0" />
+                    <span>{isAr ? 'ضمان التسجيل والاستفسار المجاني:' : 'Garantie d’inscription sans engagement :'}</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-relaxed">
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
                     {isAr
-                      ? 'يمكنك طلب بطاقة ستوندار (10%) أو بطاقة طالب جامعي (20% بمميزات البرو) من حسابك لتطبيق التخفيضات ونقاط الزيارات تلقائياً فور موافقة الأدمين.'
-                      : 'Faites votre demande de carte Standard (10%) ou Étudiant (20%) pour activer vos réductions.'}
+                      ? 'عند النقر على "طلب الدورة"، يتم تسجيل طلبك واستفسارك فقط لتتواصل معك الإدارة وتجيبك عن تفاصيل الدورة والبرامج دون أي التزام أو دفع فوري.'
+                      : 'Cliquer sur commander est une simple pré-inscription d’information sans obligation de paiement immédiat.'}
                   </p>
                 </div>
-              </div>
-            </div>
-          );
-        }
 
-        return (
-          <div className="mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-slate-900 to-amber-500/10 border-2 border-amber-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-lg shadow-amber-500/10">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 p-0.5 shadow-md shadow-amber-500/20 shrink-0">
-                <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center text-amber-400">
-                  <CreditCard className="w-5 h-5" />
+                <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold">
+                    <CreditCard className="w-4 h-4 shrink-0" />
+                    <span>{isAr ? 'تخفيضات بطاقات العضوية المعتمدة:' : 'Barème des remises par carte :'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-center">
+                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-bold">Standard</span>
+                      <span className="text-xs font-black text-amber-300 font-mono">-10%</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-bold">طالب جامعي 🎓 / PRO</span>
+                      <span className="text-xs font-black text-emerald-400 font-mono">-20%</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-bold">Silver</span>
+                      <span className="text-xs font-black text-slate-200 font-mono">-20%</span>
+                    </div>
+                    <div className="p-2 rounded-lg bg-slate-950 border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block font-bold">Golden VIP</span>
+                      <span className="text-xs font-black text-amber-400 font-mono">-30%</span>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs sm:text-sm font-black text-white">
-                    {isAr ? `تخفيض بطاقتك المعتمدة (${activeTierName}):` : `Remise Carte Adhérent (${activeTier}) :`}
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-extrabold text-xs">
-                    -{activeTierPercent}% {isAr ? 'مخصومة من كل الأسعار' : 'sur tous les tarifs'}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
-                  {isAr
-                    ? `كل أسعار الدورات بالأسفل تُحسب لك بالسعر الجديد مع بيان السعر الأصلي المعتمد للأدمن وما تم خصمه لك بالضبط!`
-                    : `Les tarifs ci-dessous affichent le prix officiel de l’admin, le montant déduit par votre carte et votre nouveau prix net.`}
-                </p>
-              </div>
-            </div>
-
-            {/* Quick overview of all tier discounts */}
-            <div className="flex items-center gap-1.5 flex-wrap self-end md:self-center">
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${activeTier === 'STANDARD' ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-slate-950/80 text-slate-400 border-slate-800'}`}>
-                Standard: 10%
-              </span>
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${activeTier === 'PRO' ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-slate-950/80 text-slate-400 border-slate-800'}`}>
-                PRO: 20%
-              </span>
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${activeTier === 'SILVER' ? 'bg-amber-500 text-slate-950 border-amber-400 font-black' : 'bg-slate-950/80 text-slate-400 border-slate-800'}`}>
-                Silver: 20%
-              </span>
-              <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${activeTier === 'GOLDEN' ? 'bg-gradient-to-r from-yellow-400 to-amber-500 text-slate-950 border-yellow-300 font-black shadow-sm' : 'bg-slate-950/80 text-slate-400 border-slate-800'}`}>
-                Golden VIP: 30%
-              </span>
-            </div>
+            )}
           </div>
         );
       })()}
@@ -315,12 +302,26 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
               {/* Card Body */}
               <div className="p-5 flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors leading-snug mb-2">
+                  <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-amber-400 transition-colors leading-snug mb-1.5">
                     {course.title}
                   </h3>
-                  <p className="text-xs text-slate-400 line-clamp-3 mb-4 leading-relaxed">
-                    {isAr ? course.shortDesc.ar : course.shortDesc.fr}
-                  </p>
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <p className="text-xs text-slate-400 line-clamp-1 flex-1">
+                      {isAr ? course.shortDesc.ar : course.shortDesc.fr}
+                    </p>
+                    {onSelectCourseForDetail && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectCourseForDetail(course);
+                        }}
+                        className="text-[11px] text-amber-400 hover:text-amber-300 font-bold underline shrink-0 cursor-pointer"
+                      >
+                        {isAr ? 'تفاصيل أكثر ▾' : 'Détails ▾'}
+                      </button>
+                    )}
+                  </div>
 
                   {/* Standards Tags */}
                   <div className="flex flex-wrap gap-1.5 mb-4">
