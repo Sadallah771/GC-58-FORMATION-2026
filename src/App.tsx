@@ -45,6 +45,7 @@ function AppContent() {
   // Modals state
   const [isEnrollModalOpen, setIsEnrollModalOpen] = useState(false);
   const [enrollPreselectedIds, setEnrollPreselectedIds] = useState<string[]>([]);
+  const [enrollPreselectedPack, setEnrollPreselectedPack] = useState<number | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [courseForDetail, setCourseForDetail] = useState<Course | null>(null);
@@ -326,11 +327,19 @@ function AppContent() {
   };
 
   const handleEnrollSingleCourse = (course: Course) => {
+    setEnrollPreselectedPack(null);
     setEnrollPreselectedIds([course.id]);
     setIsEnrollModalOpen(true);
   };
 
+  const handleSelectEngineerPack = (packCount: number) => {
+    setEnrollPreselectedPack(packCount);
+    setEnrollPreselectedIds([]);
+    setIsEnrollModalOpen(true);
+  };
+
   const handleOpenCartOrEnroll = () => {
+    setEnrollPreselectedPack(null);
     if (selectedCourseIds.length > 0) {
       setEnrollPreselectedIds(selectedCourseIds);
     } else {
@@ -395,6 +404,7 @@ function AppContent() {
               userLoyalty={userLoyalty}
               onOpenGiftModal={() => setIsGiftModalOpen(true)}
               onOpenFastEnroll={handleOpenCartOrEnroll}
+              onSelectPack={handleSelectEngineerPack}
             />
 
             {/* Verified Student Reviews & Testimonials */}
@@ -443,6 +453,7 @@ function AppContent() {
               userLoyalty={userLoyalty}
               onSelectCourseForDetail={(c) => setCourseForDetail(c)}
               onSelectCourseForEnroll={handleEnrollSingleCourse}
+              onSelectPack={handleSelectEngineerPack}
               selectedCourseIds={selectedCourseIds}
               onToggleSelectCourse={toggleSelectCourse}
             />
@@ -550,6 +561,7 @@ function AppContent() {
         onClose={() => setIsEnrollModalOpen(false)}
         language={language}
         preselectedCourseIds={enrollPreselectedIds}
+        preselectedPackCount={enrollPreselectedPack}
         courses={courses}
         sitePhone={sitePhone}
         userLoyalty={userLoyalty}

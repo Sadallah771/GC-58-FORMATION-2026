@@ -38,7 +38,8 @@ export const CourseDetailModal: React.FC<CourseDetailModalProps> = ({
   const isAr = language === 'ar';
   const isBA = course.category === 'beton_arme';
   const isMetal = course.category === 'charpente_metallique';
-  const pricing = calculateCourseDiscount(course.price, userLoyalty?.tier || 'STANDARD');
+  const hasCard = Boolean(userLoyalty?.hasActiveCard);
+  const pricing = calculateCourseDiscount(course.price, userLoyalty?.tier || 'STANDARD', hasCard);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">

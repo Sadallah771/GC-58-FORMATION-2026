@@ -24,13 +24,14 @@ import { Course, Language, Registration, ClientLoyaltyData } from '../types';
 import { COURSES_DATA } from '../data/coursesData';
 import { ALGERIAN_WILAYAS } from '../data/wilayas';
 import { AddReviewModal } from './AddReviewModal';
-import { calculateCartDiscount, getTierNameAr, getTierDiscountPercent } from '../utils/loyaltyHelper';
+import { calculateCartDiscount, getTierNameAr, ENGINEER_PACKS } from '../utils/loyaltyHelper';
 
 interface EnrollmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   language: Language;
   preselectedCourseIds?: string[];
+  preselectedPackCount?: number | null;
   onOrderCompleted?: () => void;
   onOpenReviewModal?: (courseId?: string) => void;
   courses?: Course[];
@@ -43,6 +44,7 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   onClose,
   language,
   preselectedCourseIds = [],
+  preselectedPackCount = null,
   onOrderCompleted,
   courses = COURSES_DATA,
   sitePhone = '0797034244',
@@ -60,6 +62,8 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   const [wilaya, setWilaya] = useState('16 - Alger (الجزائر العاصمة)');
   const [statusEducation, setStatusEducation] = useState('Étudiant / Ingénieur Génie Civil');
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
+  const [selectedPackCount, setSelectedPackCount] = useState<number | null>(null);
+  const [showPackInfo, setShowPackInfo] = useState(false);
   const [notes, setNotes] = useState('');
 
   const [voucherCopied, setVoucherCopied] = useState(false);
@@ -67,6 +71,8 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submittedOrder, setSubmittedOrder] = useState<Registration | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
+  const activeCoursesList = courses.filter((c) => c.isActive !== false);
 
   // Sync if user already authenticated or stored email
   useEffect(() => {
@@ -79,23 +85,64 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
     }
   }, [user]);
 
-  // Sync preselected courses
-  useEffect(() => {
-    if (preselectedCourseIds.length > 0) {
-      setSelectedCourses(preselectedCourseIds);
-    } else if (selectedCourses.length === 0 && courses.length > 0) {
-      setSelectedCourses([courses[0].id]);
+  const applyEngineerPack = (packCount: number) => {
+    if (selectedPackCount === packCount) {
+      setSelectedPackCount(null);
+      return;
     }
-  }, [preselectedCourseIds, courses]);
+    setSelectedPackCount(packCount);
+    if (packCount >= 14) {
+      setSelectedCourses(activeCoursesList.map((c) => c.id));
+    } else {
+      const currentValid = selectedCourses.filter((id) => activeCoursesList.some((c) => c.id === id));
+      if (currentValid.length === packCount) {
+        setSelectedCourses(currentValid);
+      } else if (currentValid.length > packCount) {
+        setSelectedCourses(currentValid.slice(0, packCount));
+      } else {
+        const needed = packCount - currentValid.length;
+        const extras = activeCoursesList
+          .filter((c) => !currentValid.includes(c.id))
+          .slice(0, needed)
+          .map((c) => c.id);
+        setSelectedCourses([...currentValid, ...extras]);
+      }
+    }
+  };
+
+  // Sync preselected courses & pack when modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+    if (preselectedPackCount) {
+      setSelectedPackCount(preselectedPackCount);
+      if (preselectedPackCount >= 14) {
+        setSelectedCourses(activeCoursesList.map((c) => c.id));
+      } else {
+        setSelectedCourses(activeCoursesList.slice(0, preselectedPackCount).map((c) => c.id));
+      }
+    } else {
+      setSelectedPackCount(null);
+      if (preselectedCourseIds.length > 0) {
+        setSelectedCourses(preselectedCourseIds);
+      } else if (selectedCourses.length === 0 && courses.length > 0) {
+        setSelectedCourses([courses[0].id]);
+      }
+    }
+  }, [isOpen, preselectedCourseIds, preselectedPackCount]);
 
   if (!isOpen) return null;
 
   const toggleCourse = (courseId: string) => {
+    let next: string[];
     if (selectedCourses.includes(courseId)) {
       if (selectedCourses.length === 1) return; // Keep at least 1 course
-      setSelectedCourses(selectedCourses.filter((id) => id !== courseId));
+      next = selectedCourses.filter((id) => id !== courseId);
     } else {
-      setSelectedCourses([...selectedCourses, courseId]);
+      next = [...selectedCourses, courseId];
+    }
+    setSelectedCourses(next);
+    if (selectedPackCount && next.length !== selectedPackCount && !(selectedPackCount === 14 && next.length >= 13)) {
+      setSelectedPackCount(null);
     }
   };
 
@@ -105,14 +152,19 @@ export const EnrollmentModal: React.FC<EnrollmentModalProps> = ({
   const cartPricing = calculateCartDiscount(
     selectedCourseObjs.map((c) => c.price),
     activeTier,
-    hasCard
+    hasCard,
+    selectedPackCount,
+    selectedCourseObjs.map((c) => c.originalPrice || c.price)
   );
 
   const originalTotalAmount = cartPricing.originalTotal;
   const discountAmount = cartPricing.discountAmount;
   const discountPercent = cartPricing.discountPercent;
   const netTotalAmount = cartPricing.netTotal;
-  const courseNamesSummary = selectedCourseObjs.map((c) => c.title).join(', ');
+  const courseNamesList = selectedCourseObjs.map((c) => c.title).join(', ');
+  const courseNamesSummary = cartPricing.isEngineerPack && cartPricing.engineerPack
+    ? `[${isAr ? cartPricing.engineerPack.titleAr : cartPricing.engineerPack.titleFr}] ${courseNamesList}`
+    : courseNamesList;
 
   const activeMemberId =
     userLoyalty?.memberId ||
@@ -301,15 +353,67 @@ ${submittedOrder.courseNames}
           {/* STEP 1: FAST DIRECT REGISTRATION (NO PAYMENT HURDLES, NO RECEIPT) */}
           {currentStep === 'form' && (
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* حقيبة المهندس (Engineer Pack) Selector */}
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-slate-950 to-slate-950 border border-amber-500/35 space-y-2.5">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="text-xs sm:text-sm font-black text-white">
+                      {isAr ? '💼 حقيبة المهندس (باقات اقتصادية):' : '💼 Pack Ingénieur :'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowPackInfo(!showPackInfo)}
+                    className="text-[11px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+                  >
+                    {showPackInfo ? (isAr ? 'إخفاء ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل ▾' : 'Détails ▾')}
+                  </button>
+                </div>
+
+                {showPackInfo && (
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    {isAr
+                      ? 'اختر عدد الدورات التي تناسبك بسعر الباقة الموحد، ثم حدد الدورات التي تريدها من القائمة بالأسفل.'
+                      : 'Choisissez votre pack de formations à tarif groupé puis personnalisez votre sélection ci-dessous.'}
+                  </p>
+                )}
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {ENGINEER_PACKS.map((pack) => {
+                    const isPackSelected = selectedPackCount === pack.count;
+                    return (
+                      <button
+                        type="button"
+                        key={pack.count}
+                        onClick={() => applyEngineerPack(pack.count)}
+                        className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                          isPackSelected
+                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/20 scale-[1.02]'
+                            : 'bg-slate-900/90 border-slate-800 text-slate-200 hover:border-amber-500/50'
+                        }`}
+                      >
+                        <span className={`block text-[11px] font-black ${isPackSelected ? 'text-slate-950' : 'text-white'}`}>
+                          {isAr ? pack.shortLabelAr : pack.shortLabelFr}
+                        </span>
+                        <span className={`block text-xs font-mono font-black mt-0.5 ${isPackSelected ? 'text-slate-950' : 'text-amber-400'}`} dir="ltr">
+                          {pack.price.toLocaleString()} DA
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* Courses Selection Card */}
               <div className="p-4 sm:p-5 rounded-2xl bg-slate-950/70 border border-slate-800 space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-amber-400" />
-                    <span>{isAr ? 'الدورات المختارة للتسجيل (حدد أو ألغِ بنقرة واحدة):' : 'Formations sélectionnées :'}</span>
+                    <span>{isAr ? 'الدورات المختارة للتسجيل:' : 'Formations sélectionnées :'}</span>
                   </h4>
-                  <span className="text-[11px] font-mono text-amber-400 font-bold">
-                    {selectedCourses.length} {isAr ? 'دورة' : 'cours'}
+                  <span className="text-[11px] font-mono text-amber-400 font-bold shrink-0">
+                    {selectedPackCount === 14 ? '14' : selectedCourses.length} {isAr ? 'دورة' : 'cours'}
                   </span>
                 </div>
 
@@ -468,21 +572,27 @@ ${submittedOrder.courseNames}
                 </div>
               </div>
 
-              {/* Total & Member Discount Breakdown */}
+              {/* Total & Member / Pack Discount Breakdown */}
               <div className="p-4 rounded-2xl bg-slate-950/90 border border-amber-500/30 space-y-3">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-2">
                     <CreditCard className="w-4 h-4 text-amber-400" />
                     <span className="text-slate-300 font-bold">
-                      {isAr ? `تخفيض بطاقة العضوية (${cartPricing.tierNameAr}):` : `Remise carte (${cartPricing.tierNameFr}) :`}
+                      {cartPricing.isEngineerPack && cartPricing.engineerPack
+                        ? (isAr ? `💼 عرض ${cartPricing.engineerPack.titleAr}:` : `💼 ${cartPricing.engineerPack.titleFr} :`)
+                        : (isAr ? `تخفيض بطاقة العضوية (${cartPricing.tierNameAr}):` : `Remise carte (${cartPricing.tierNameFr}) :`)}
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">
-                      -{discountPercent}%
-                    </span>
+                    {discountPercent > 0 && (
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold font-mono">
+                        -{discountPercent}%
+                      </span>
+                    )}
                   </div>
-                  <span className="text-emerald-400 font-bold font-mono">
-                    {isAr ? `وش نقصتلك المنصة: -${discountAmount.toLocaleString()} دج` : `Montant déduit : -${discountAmount.toLocaleString()} DA`}
-                  </span>
+                  {discountAmount > 0 && (
+                    <span className="text-emerald-400 font-bold font-mono">
+                      {isAr ? `توفير: -${discountAmount.toLocaleString()} دج` : `Économie : -${discountAmount.toLocaleString()} DA`}
+                    </span>
+                  )}
                 </div>
 
                 <div className="pt-2 border-t border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

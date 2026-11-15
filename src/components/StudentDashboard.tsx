@@ -19,8 +19,10 @@ import {
   Lock,
   Unlock,
   Play,
-  ExternalLink
+  ExternalLink,
+  Camera
 } from 'lucide-react';
+import { getUserAvatar, saveUserAvatar, subscribeToAvatarChanges } from '../utils/userAvatarHelper';
 import { 
   collection, 
   query, 
@@ -64,6 +66,35 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [myRegistrations, setMyRegistrations] = useState<Registration[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [isGiftUnlocked, setIsGiftUnlocked] = useState(false);
+
+  const [userAvatar, setUserAvatar] = useState<string | null>(() => getUserAvatar(user?.uid));
+  const avatarInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setUserAvatar(getUserAvatar(user?.uid));
+    const unsub = subscribeToAvatarChanges(user?.uid, (newAv) => setUserAvatar(newAv));
+    return () => unsub();
+  }, [user?.uid]);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      alert(isAr ? 'يرجى اختيار ملف صورة صالح (JPG, PNG)' : 'Veuillez choisir une image');
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      alert(isAr ? 'حجم الصورة كبير، اختر صورة أقل من 4 ميغابايت' : 'Image trop volumineuse (max 4Mo)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      saveUserAvatar(user.uid, dataUrl);
+      setUserAvatar(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Sync gift unlock status specifically tied to this user account and current secret code
   useEffect(() => {
@@ -263,8 +294,33 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
       {/* Student Welcome Header */}
       <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-slate-900 via-slate-900 to-slate-950 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
-            {user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+          {/* Profile Picture with Upload */}
+          <div 
+            className="relative group cursor-pointer shrink-0" 
+            onClick={() => avatarInputRef.current?.click()}
+            title={isAr ? 'انقر لتغيير أو رفع صورتك الشخصية 📷' : 'Changer votre photo de profil'}
+          >
+            <input
+              type="file"
+              ref={avatarInputRef}
+              onChange={handleAvatarUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            {userAvatar ? (
+              <img
+                src={userAvatar}
+                alt="Profile"
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-amber-500/50 shadow-lg shadow-amber-500/20 group-hover:opacity-80 transition-opacity"
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 font-black text-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                {user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+              </div>
+            )}
+            <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-slate-950 text-amber-400 border border-amber-500/60 flex items-center justify-center shadow">
+              <Camera className="w-3.5 h-3.5" />
+            </div>
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">

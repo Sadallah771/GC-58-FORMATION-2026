@@ -11,10 +11,11 @@ import {
   FileText,
   ShieldAlert,
   Percent,
-  Download
+  Download,
+  Briefcase
 } from 'lucide-react';
 import { Language, AppView, ClientLoyaltyData } from '../types';
-import { getTierDiscountPercent, getTierNameAr } from '../utils/loyaltyHelper';
+import { getTierDiscountPercent, getTierNameAr, ENGINEER_PACKS } from '../utils/loyaltyHelper';
 
 interface HomePortalGatewaysProps {
   language: Language;
@@ -22,6 +23,7 @@ interface HomePortalGatewaysProps {
   userLoyalty?: ClientLoyaltyData | null;
   onOpenGiftModal: () => void;
   onOpenFastEnroll: () => void;
+  onSelectPack?: (packCount: number) => void;
 }
 
 export const HomePortalGateways: React.FC<HomePortalGatewaysProps> = ({
@@ -30,10 +32,11 @@ export const HomePortalGateways: React.FC<HomePortalGatewaysProps> = ({
   userLoyalty,
   onOpenGiftModal,
   onOpenFastEnroll,
+  onSelectPack,
 }) => {
   const isAr = language === 'ar';
   const activeTier = userLoyalty?.tier || 'STANDARD';
-  const discountPercent = getTierDiscountPercent(activeTier);
+  const discountPercent = getTierDiscountPercent(activeTier, Boolean(userLoyalty?.hasActiveCard));
   const [expandedCard, setExpandedCard] = React.useState<string | null>(null);
 
   const toggleDetails = (id: string, e: React.MouseEvent) => {
@@ -280,6 +283,58 @@ export const HomePortalGateways: React.FC<HomePortalGatewaysProps> = ({
               <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* حقيبة المهندس (Engineer Pack) Compact Gateway */}
+      <div className="mt-5 p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/35 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0">
+              <Briefcase className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-black text-white">
+                {isAr ? 'حقيبة المهندس (الباقات الاقتصادية) 💼' : 'Pack Ingénieur (Offres Groupées) 💼'}
+              </h3>
+              <p className="text-[11px] text-slate-400">
+                {isAr ? 'اختر عدد الدورات واحصل على تسعيرة الباقة مباشرة' : 'Tarifs préférentiels multi-formations'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={(e) => toggleDetails('pack', e)}
+            className="text-[11px] font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"
+          >
+            <span>{expandedCard === 'pack' ? (isAr ? 'إخفاء التفاصيل ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل ▾' : 'Plus de détails ▾')}</span>
+          </button>
+        </div>
+
+        {expandedCard === 'pack' && (
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1 animate-in fade-in duration-200">
+            <p>• {isAr ? 'يمكنك اختيار أي دورات تفضلها من الخرسانة، الهياكل المعدنية أو الطرقات داخل الحقيبة.' : 'Composez votre pack librement parmi tout le catalogue.'}</p>
+            <p>• {isAr ? 'حقيبة 14 دورة (38,000 دج) تمنحك المستوى الذهبي VIP مع كامل الملفات والشيتات.' : 'Le pack 14 cours débloque le statut Golden VIP.'}</p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          {ENGINEER_PACKS.map((pack) => (
+            <button
+              key={pack.count}
+              type="button"
+              onClick={() => onSelectPack ? onSelectPack(pack.count) : onOpenFastEnroll()}
+              className="p-2.5 rounded-xl bg-slate-950/90 hover:bg-amber-500 border border-slate-800 hover:border-amber-400 text-center transition-all group cursor-pointer active:scale-95"
+            >
+              <span className="block text-xs font-black text-white group-hover:text-slate-950">
+                {isAr ? pack.shortLabelAr : pack.shortLabelFr}
+              </span>
+              <span className="block text-sm font-mono font-black text-amber-400 group-hover:text-slate-950 mt-0.5" dir="ltr">
+                {pack.price.toLocaleString()} دج
+              </span>
+            </button>
+          ))}
         </div>
       </div>
     </section>

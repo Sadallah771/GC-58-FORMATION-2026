@@ -22,6 +22,58 @@ export interface TierDetails {
   perks: TierPerkItem[];
 }
 
+export interface EngineerPackTier {
+  count: 2 | 3 | 5 | 10 | 14;
+  price: number;
+  titleAr: string;
+  titleFr: string;
+  shortLabelAr: string;
+  shortLabelFr: string;
+}
+
+export const ENGINEER_PACKS: EngineerPackTier[] = [
+  {
+    count: 2,
+    price: 7400,
+    titleAr: 'حقيبة المهندس (دورتين)',
+    titleFr: 'Pack Ingénieur (2 Cours)',
+    shortLabelAr: 'دورتين',
+    shortLabelFr: '2 Cours',
+  },
+  {
+    count: 3,
+    price: 9900,
+    titleAr: 'حقيبة المهندس (3 دورات)',
+    titleFr: 'Pack Ingénieur (3 Cours)',
+    shortLabelAr: '3 دورات',
+    shortLabelFr: '3 Cours',
+  },
+  {
+    count: 5,
+    price: 14000,
+    titleAr: 'حقيبة المهندس (5 دورات)',
+    titleFr: 'Pack Ingénieur (5 Formations)',
+    shortLabelAr: '5 دورات',
+    shortLabelFr: '5 Cours',
+  },
+  {
+    count: 10,
+    price: 30000,
+    titleAr: 'حقيبة المهندس (10 دورات)',
+    titleFr: 'Pack Ingénieur (10 Formations)',
+    shortLabelAr: '10 دورات',
+    shortLabelFr: '10 Cours',
+  },
+  {
+    count: 14,
+    price: 38000,
+    titleAr: 'حقيبة المهندس الشاملة (14 دورة)',
+    titleFr: 'Pack Intégral (14 Formations)',
+    shortLabelAr: '14 دورة',
+    shortLabelFr: '14 Cours',
+  },
+];
+
 export const ALL_TIER_DETAILS: Record<LoyaltyTier, TierDetails> = {
   STANDARD: {
     tier: 'STANDARD',
@@ -715,19 +767,64 @@ export function calculateCourseDiscount(basePrice: number, tier: LoyaltyTier = '
 }
 
 /**
- * Calculates cart total discount based on all selected courses and the active membership tier.
+ * Calculates cart total discount based on selected courses, optional Engineer Pack tier, and active membership tier.
  */
-export function calculateCartDiscount(coursePrices: number[], tier: LoyaltyTier = 'STANDARD', hasActiveCard: boolean = true) {
-  const originalTotal = coursePrices.reduce((sum, p) => sum + (p || 0), 0);
-  const discountPercent = getTierDiscountPercent(tier, hasActiveCard);
-  const discountAmount = Math.round((originalTotal * discountPercent) / 100);
-  const netTotal = Math.max(0, originalTotal - discountAmount);
+export function calculateCartDiscount(
+  coursePrices: number[],
+  tier: LoyaltyTier = 'STANDARD',
+  hasActiveCard: boolean = true,
+  selectedPackCount?: number | null,
+  courseOriginalPrices?: number[]
+) {
+  const baseSum = coursePrices.reduce((sum, p) => sum + (p || 0), 0);
+  const origSum = courseOriginalPrices
+    ? courseOriginalPrices.reduce((sum, p, i) => sum + (p || coursePrices[i] || 0), 0)
+    : baseSum;
+
+  const cardDiscountPercent = getTierDiscountPercent(tier, hasActiveCard);
+  const cardDiscountAmount = Math.round((baseSum * cardDiscountPercent) / 100);
+  const cardNetTotal = Math.max(0, baseSum - cardDiscountAmount);
+
+  const explicitPack = selectedPackCount
+    ? ENGINEER_PACKS.find((p) => p.count === selectedPackCount) || null
+    : null;
+
+  const autoMatchedPack =
+    ENGINEER_PACKS.find(
+      (p) => p.count === coursePrices.length || (p.count === 14 && coursePrices.length >= 13)
+    ) || null;
+
+  const activePack =
+    explicitPack ||
+    (autoMatchedPack && autoMatchedPack.price < cardNetTotal ? autoMatchedPack : null);
+
+  if (activePack) {
+    const referenceTotal = baseSum >= activePack.price ? baseSum : Math.max(origSum, activePack.price);
+    const packDiscountAmount = Math.max(0, referenceTotal - activePack.price);
+    const effectivePercent =
+      referenceTotal > 0 ? Math.round((packDiscountAmount / referenceTotal) * 100) : 0;
+
+    return {
+      originalTotal: referenceTotal,
+      discountPercent: effectivePercent,
+      discountAmount: packDiscountAmount,
+      netTotal: activePack.price,
+      isEngineerPack: true,
+      engineerPack: activePack,
+      tier,
+      hasActiveCard,
+      tierNameAr: getTierNameAr(tier),
+      tierNameFr: getTierNameFr(tier),
+    };
+  }
 
   return {
-    originalTotal,
-    discountPercent,
-    discountAmount,
-    netTotal,
+    originalTotal: baseSum,
+    discountPercent: cardDiscountPercent,
+    discountAmount: cardDiscountAmount,
+    netTotal: cardNetTotal,
+    isEngineerPack: false,
+    engineerPack: null as EngineerPackTier | null,
     tier,
     hasActiveCard,
     tierNameAr: getTierNameAr(tier),

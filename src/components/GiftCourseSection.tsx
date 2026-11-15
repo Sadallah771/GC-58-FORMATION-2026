@@ -39,6 +39,7 @@ export const GiftCourseSection: React.FC<GiftCourseSectionProps> = ({
 }) => {
   const isAr = language === 'ar';
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
+  const [showGiftDetails, setShowGiftDetails] = useState<boolean>(false);
 
   useEffect(() => {
     if (!user) {
@@ -87,13 +88,11 @@ export const GiftCourseSection: React.FC<GiftCourseSectionProps> = ({
               <span className="text-slate-400">·</span>
               <span className="text-emerald-400 font-bold">{isAr ? 'مجانية 100% بكود سري' : '100% Gratuite avec Code'}</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-              {isAr ? 'دورة تكوينية هدية برابط Google Drive مشفر' : 'Formation Offerte avec Accès Sécurisé'}
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              {isAr ? 'الدورة الهدية المجانية 🎁' : 'Formation Offerte 🎁'}
             </h2>
-            <p className="text-sm text-slate-400 mt-2 max-w-2xl">
-              {isAr
-                ? 'يقدمها لكم المعهد كهدية حصرية لجميع المهندسين وطلبة الهندسة المدنية. الحلقات والمرفقات كاملة ومحفوظة على سيرفرات جوجل درايف ومحمية برمز وصول سري.'
-                : 'Une formation complète exclusive accessible avec votre code de déverrouillage, hébergée sur Google Drive avec fichiers de calcul.'}
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+              {isAr ? 'مجانية 100% بكود سري داخل حسابك.' : '100% gratuite avec code secret.'}
             </p>
           </div>
 
@@ -143,48 +142,52 @@ export const GiftCourseSection: React.FC<GiftCourseSectionProps> = ({
                   </span>
                 </div>
 
-                <h3 className="text-xl sm:text-2xl lg:text-3xl font-black text-white leading-snug">
+                <h3 className="text-xl sm:text-2xl font-black text-white leading-snug">
                   {giftCourse.title}
                 </h3>
-                
-                <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                  {giftCourse.subtitle || (isAr ? giftCourse.descriptionAr : giftCourse.descriptionFr)}
-                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setShowGiftDetails(!showGiftDetails)}
+                  className="mt-2 text-xs font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer inline-block"
+                >
+                  {showGiftDetails ? (isAr ? 'إخفاء التفاصيل ▴' : 'Masquer ▴') : (isAr ? 'مزيد من المعلومات والحلقات ▾' : 'Plus d’infos & épisodes ▾')}
+                </button>
               </div>
 
-              {/* Instructor info banner */}
-              <div className="p-4 rounded-2xl bg-slate-950/70 border border-slate-800/80 flex items-center gap-3.5">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 font-black text-base flex items-center justify-center shrink-0 shadow-md">
-                  GC58
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">{giftCourse.instructorName}</h4>
-                  <p className="text-[11px] text-slate-400">{giftCourse.instructorTitle}</p>
-                </div>
-              </div>
+              {showGiftDetails && (
+                <div className="space-y-4 animate-in fade-in duration-200 pt-2 border-t border-slate-800/80">
+                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                    {giftCourse.subtitle || (isAr ? giftCourse.descriptionAr : giftCourse.descriptionFr)}
+                  </p>
 
-              {/* Sample Episodes Preview Pills */}
-              <div className="space-y-2">
-                <div className="text-xs font-bold text-slate-300 flex items-center justify-between">
-                  <span>{isAr ? 'عينة من حلقات الدورة الهدية:' : 'Aperçu du contenu :'}</span>
-                  <span className="text-[11px] font-mono text-amber-400">
-                    {giftCourse.episodes.length} {isAr ? 'حلقة متوفرة' : 'modules'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {giftCourse.episodes.slice(0, 4).map((ep, idx) => (
-                    <div 
-                      key={ep.id}
-                      className="p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/80 flex items-center gap-2.5 text-slate-300"
-                    >
-                      <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 font-mono font-bold text-[11px] flex items-center justify-center shrink-0">
-                        {idx + 1}
-                      </div>
-                      <span className="truncate text-xs font-medium">{ep.title}</span>
+                  {/* Instructor info banner */}
+                  <div className="p-3.5 rounded-2xl bg-slate-950/70 border border-slate-800/80 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 font-black text-sm flex items-center justify-center shrink-0">
+                      GC58
                     </div>
-                  ))}
+                    <div>
+                      <h4 className="text-xs font-bold text-white">{giftCourse.instructorName}</h4>
+                      <p className="text-[11px] text-slate-400">{giftCourse.instructorTitle}</p>
+                    </div>
+                  </div>
+
+                  {/* Sample Episodes Preview Pills */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    {giftCourse.episodes.slice(0, 4).map((ep, idx) => (
+                      <div 
+                        key={ep.id}
+                        className="p-2.5 rounded-xl bg-slate-950/50 border border-slate-800/80 flex items-center gap-2.5 text-slate-300"
+                      >
+                        <div className="w-6 h-6 rounded-lg bg-amber-500/10 text-amber-400 font-mono font-bold text-[11px] flex items-center justify-center shrink-0">
+                          {idx + 1}
+                        </div>
+                        <span className="truncate text-xs font-medium">{ep.title}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-2">

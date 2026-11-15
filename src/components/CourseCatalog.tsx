@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { Course, CourseCategory, Language, ClientLoyaltyData } from '../types';
 import { COURSES_DATA } from '../data/coursesData';
-import { calculateCourseDiscount, getTierNameAr, getTierDiscountPercent } from '../utils/loyaltyHelper';
+import { calculateCourseDiscount, getTierNameAr, getTierDiscountPercent, ENGINEER_PACKS } from '../utils/loyaltyHelper';
 
 interface CourseCatalogProps {
   language: Language;
@@ -22,6 +22,7 @@ interface CourseCatalogProps {
   userLoyalty?: ClientLoyaltyData | null;
   onSelectCourseForDetail?: (course: Course) => void;
   onSelectCourseForEnroll: (course: Course) => void;
+  onSelectPack?: (packCount: number) => void;
   selectedCourseIds: string[];
   onToggleSelectCourse: (courseId: string) => void;
 }
@@ -32,6 +33,7 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
   userLoyalty,
   onSelectCourseForDetail,
   onSelectCourseForEnroll,
+  onSelectPack,
   selectedCourseIds,
   onToggleSelectCourse,
 }) => {
@@ -39,6 +41,7 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
   const [selectedSoftware, setSelectedSoftware] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showCatalogDetails, setShowCatalogDetails] = useState<boolean>(false);
+  const [showPackDetails, setShowPackDetails] = useState<boolean>(false);
 
   const isAr = language === 'ar';
 
@@ -173,6 +176,51 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
         );
       })()}
 
+      {/* حقيبة المهندس (Engineer Pack) Compact Bar */}
+      <div className="mb-6 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-900 to-slate-900 border border-amber-500/35 space-y-2.5">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="text-xs sm:text-sm font-black text-white">
+              {isAr ? '💼 حقيبة المهندس (أسعار الباقات):' : '💼 Pack Ingénieur (Tarifs groupés) :'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowPackDetails(!showPackDetails)}
+            className="text-[11px] font-bold text-amber-400 hover:text-amber-300 underline cursor-pointer"
+          >
+            {showPackDetails ? (isAr ? 'إخفاء ▴' : 'Masquer ▴') : (isAr ? 'مزيد من التفاصيل ▾' : 'Plus de détails ▾')}
+          </button>
+        </div>
+
+        {showPackDetails && (
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            {isAr
+              ? 'اضغط على أي حقيبة لاختيار الدورات التي تفضلها بالسعر الموحد واستخراج قسيمة الطلب فوراً.'
+              : 'Cliquez sur un pack pour choisir vos formations au tarif groupé.'}
+          </p>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {ENGINEER_PACKS.map((pack) => (
+            <button
+              key={pack.count}
+              type="button"
+              onClick={() => onSelectPack?.(pack.count)}
+              className="p-2 rounded-xl bg-slate-950/90 hover:bg-amber-500 hover:text-slate-950 border border-slate-800 hover:border-amber-400 text-center transition-all group cursor-pointer"
+            >
+              <span className="block text-[11px] font-black text-white group-hover:text-slate-950">
+                {isAr ? pack.shortLabelAr : pack.shortLabelFr}
+              </span>
+              <span className="block text-xs font-mono font-black text-amber-400 group-hover:text-slate-950 mt-0.5" dir="ltr">
+                {pack.price.toLocaleString()} DA
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Category Tabs */}
       <div className="flex flex-wrap items-center gap-2 mb-4 pb-2 border-b border-slate-800/60">
         <button
@@ -183,7 +231,7 @@ export const CourseCatalog: React.FC<CourseCatalogProps> = ({
               : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
           }`}
         >
-          {isAr ? 'جميع الدورات (13)' : 'Toutes les formations (13)'}
+          {isAr ? `جميع الدورات (${visibleCourses.length})` : `Toutes les formations (${visibleCourses.length})`}
         </button>
 
         <button

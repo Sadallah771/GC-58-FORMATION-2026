@@ -1,7 +1,6 @@
 import React from 'react';
 import { 
   Building2, 
-  Layers, 
   BookOpen, 
   ShieldCheck, 
   ShoppingCart, 
@@ -12,19 +11,17 @@ import {
   X, 
   LogIn, 
   LogOut,
-  User,
-  Sparkles,
   Gift,
-  Crown,
   CreditCard,
   Download,
-  Bell,
-  Home
+  Home,
+  Camera
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { ADMIN_EMAIL } from '../firebase';
 import { Language, AppView, ClientLoyaltyData } from '../types';
 import { NotificationCenter } from './NotificationCenter';
+import { getUserAvatar, saveUserAvatar, subscribeToAvatarChanges } from '../utils/userAvatarHelper';
 
 interface NavbarProps {
   language: Language;
@@ -56,6 +53,35 @@ export const Navbar: React.FC<NavbarProps> = ({
   const { user, isAdmin, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const isAr = language === 'ar';
+
+  const [userAvatar, setUserAvatar] = React.useState<string | null>(() => getUserAvatar(user?.uid));
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  React.useEffect(() => {
+    setUserAvatar(getUserAvatar(user?.uid));
+    const unsub = subscribeToAvatarChanges(user?.uid, (newAv) => setUserAvatar(newAv));
+    return () => unsub();
+  }, [user?.uid]);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (!file.type.startsWith('image/')) {
+      alert(isAr ? 'يرجى اختيار ملف صورة صالح (JPG, PNG)' : 'Veuillez choisir une image');
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      alert(isAr ? 'حجم الصورة كبير، اختر صورة أقل من 4 ميغابايت' : 'Image trop volumineuse (max 4Mo)');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      saveUserAvatar(user.uid, dataUrl);
+      setUserAvatar(dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const algerianIntPhone = sitePhone.replace(/^0/, '213');
   const whatsappUrl = `https://wa.me/${algerianIntPhone}?text=${encodeURIComponent(
@@ -100,139 +126,21 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="font-black text-xl tracking-tight text-white group-hover:text-amber-400 transition-colors">
+              <span className="font-black text-lg sm:text-xl tracking-tight text-white group-hover:text-amber-400 transition-colors">
                 GC58
               </span>
-              <span className="text-xs px-2.5 py-0.5 rounded-md font-mono font-black bg-amber-500 text-slate-950 shadow-sm">
+              <span className="hidden sm:inline-block text-xs px-2.5 py-0.5 rounded-md font-mono font-black bg-amber-500 text-slate-950 shadow-sm">
                 FORMATIONS
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">
+            <p className="hidden md:block text-[11px] text-slate-400 font-medium">
               {isAr ? 'منصة التكوين الاحترافي في الهندسة المدنية' : 'Formations Pro Béton Armé & Charpente'}
             </p>
           </div>
         </div>
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-2">
-          {/* Home Link */}
-          <button
-            onClick={() => setCurrentView('home')}
-            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-              currentView === 'home'
-                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
-          >
-            <Home className="w-4 h-4" />
-            <span>{isAr ? 'الرئيسية' : 'Accueil'}</span>
-          </button>
-
-          {/* Courses Catalog Link */}
-          <button
-            onClick={() => setCurrentView('courses')}
-            className={`px-3.5 py-2 rounded-xl text-sm font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
-              currentView === 'courses'
-                ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>{isAr ? 'الدورات التدريبية' : 'Formations'}</span>
-          </button>
-
-          {/* Gift Course Button (Free & Code-Gated) */}
-          <button
-            onClick={() => setCurrentView('gift')}
-            className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer ${
-              currentView === 'gift'
-                ? 'bg-amber-500/25 text-amber-300 border border-amber-500/50'
-                : 'bg-amber-500/10 text-amber-300/90 border border-amber-500/30 hover:bg-amber-500/20'
-            }`}
-          >
-            <Gift className="w-4 h-4 text-amber-400" />
-            <span>{isAr ? 'هدية الموقع 🎁' : 'Cadeau Offert 🎁'}</span>
-          </button>
-
-          {/* Loyalty Membership Card Button */}
-          <button
-            onClick={() => {
-              if (!user) {
-                onOpenAuth();
-              } else {
-                setCurrentView(currentView === 'student' ? 'home' : 'student');
-              }
-            }}
-            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-              currentView === 'student'
-                ? 'bg-amber-500 text-slate-950 font-black shadow-md shadow-amber-500/20'
-                : userLoyalty?.hasActiveCard
-                ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25'
-                : userLoyalty?.cardStatus === 'pending'
-                ? 'bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25'
-                : 'bg-amber-500/10 border border-amber-500/40 text-amber-300 hover:bg-amber-500/20 animate-pulse'
-            }`}
-            title="طلب بطاقة العضوية والخصومات (مجاناً بدون شراء دورة)"
-          >
-            {userLoyalty?.hasActiveCard ? (
-              <>
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>{isAr ? (userLoyalty.tier === 'STUDENT' ? 'بطاقتي: طالب 🎓' : 'بطاقتي المعتمدة 💳') : 'Ma Carte Active'}</span>
-              </>
-            ) : userLoyalty?.cardStatus === 'pending' ? (
-              <>
-                <CreditCard className="w-4 h-4 text-amber-400" />
-                <span>{isAr ? 'البطاقة: قيد المراجعة ⏳' : 'Carte en attente ⏳'}</span>
-              </>
-            ) : (
-              <>
-                <CreditCard className="w-4 h-4 text-amber-400" />
-                <span>{isAr ? 'اطلب بطاقتك مجاناً 💳' : 'Demander ma carte 💳'}</span>
-              </>
-            )}
-          </button>
-
-
-
-          {/* WhatsApp Button */}
-          <a
-            href={whatsappUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#25D366]/15 text-[#25D366] border border-[#25D366]/30 hover:bg-[#25D366]/25 transition-all flex items-center gap-2 shadow-sm"
-          >
-            <MessageSquare className="w-4 h-4 fill-[#25D366]" />
-            <span>{isAr ? 'أكمل الطلب عبر الواتساب' : 'Finaliser sur WhatsApp'}</span>
-          </a>
-
-          {/* Call direct */}
-          <a
-            href={`tel:${sitePhone}`}
-            className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-900 border border-slate-800 text-slate-300 hover:text-white hover:border-amber-500/40 flex items-center gap-1.5"
-          >
-            <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
-            <span dir="ltr" className="font-mono inline-block">{sitePhone}</span>
-          </a>
-
-          {/* ONLY SHOWN TO sadallah771@gmail.com */}
-          {isAdmin && (
-            <button
-              onClick={() => setCurrentView('admin')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                currentView === 'admin'
-                  ? 'bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
-                  : 'bg-emerald-950/60 text-emerald-400 border border-emerald-600/60 hover:bg-emerald-900/60 animate-pulse'
-              }`}
-              title="لوحة تحكم الأدمين الحصري"
-            >
-              <ShieldCheck className="w-4 h-4" />
-              <span>{isAr ? 'لوحة تحكم الأدمين (المالك)' : 'Administration Master'}</span>
-            </button>
-          )}
-        </nav>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
+        {/* Top-Left Action Controls & User Account with Photo and Card ("لفوق اغوش مع الكونت تاعو و بطاقتو") */}
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Real-time Notification Bell Center */}
           <NotificationCenter language={language} />
 
@@ -251,83 +159,135 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Language Switcher */}
           <button
             onClick={() => setLanguage(language === 'ar' ? 'fr' : 'ar')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition-colors cursor-pointer"
+            className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 border border-slate-800 text-slate-300 hover:border-slate-700 hover:text-white transition-colors cursor-pointer"
           >
             <Globe className="w-3.5 h-3.5 text-amber-400" />
-            <span>{language === 'ar' ? 'Français' : 'العربية'}</span>
+            <span className="hidden sm:inline">{language === 'ar' ? 'Français' : 'العربية'}</span>
           </button>
 
-          {/* Google Sign-in / User Profile (RESTORED) */}
+          {/* Master Admin Button (Only shown to sadallah771@gmail.com) */}
+          {isAdmin && (
+            <button
+              onClick={() => setCurrentView('admin')}
+              className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                currentView === 'admin'
+                  ? 'bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
+                  : 'bg-emerald-950/60 text-emerald-400 border border-emerald-600/60 hover:bg-emerald-900/60 animate-pulse'
+              }`}
+              title="لوحة تحكم الأدمين الحصري"
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{isAr ? 'المالك' : 'Admin'}</span>
+            </button>
+          )}
+
+          {/* User Account + Custom Photo + Card Status Chip (لفوق اغوش) */}
           {user ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentView(currentView === 'student' ? 'home' : 'student')}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs max-w-[150px] truncate transition-all cursor-pointer ${
-                  currentView === 'student'
-                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 ring-1 ring-amber-500/50'
-                    : isAdmin 
-                    ? 'bg-emerald-950/40 border-emerald-700/60 text-emerald-300 hover:bg-emerald-900/40' 
-                    : 'bg-slate-900 border-slate-800 text-slate-300 hover:border-amber-500/40 hover:text-white'
-                }`}
-                title={isAr ? 'اضغط لفتح بطاقتك وفضائك الشخصي' : 'Cliquez pour ouvrir votre carte'}
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-1 sm:p-1.5 px-2 shadow-sm max-w-[190px] sm:max-w-none">
+              {/* Profile Avatar with Photo Upload */}
+              <div 
+                className="relative group cursor-pointer shrink-0" 
+                onClick={() => fileInputRef.current?.click()} 
+                title={isAr ? 'انقر لرفع أو تغيير صورتك الشخصية 📷' : 'Changer votre photo de profil'}
               >
-                <div className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center font-bold text-[10px] shrink-0">
-                  {user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+                {userAvatar ? (
+                  <img
+                    src={userAvatar}
+                    alt="User Avatar"
+                    className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl object-cover border border-amber-500/50 shadow-md group-hover:opacity-80 transition-opacity"
+                  />
+                ) : (
+                  <div className="w-7 h-7 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 text-slate-950 flex items-center justify-center font-black text-xs sm:text-sm shadow-md">
+                    {user.displayName ? user.displayName[0].toUpperCase() : user.email?.[0].toUpperCase()}
+                  </div>
+                )}
+                <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-slate-950 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow">
+                  <Camera className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
                 </div>
-                <span className="truncate text-[11px] font-semibold">
-                  {user.displayName || user.email?.split('@')[0]}
-                </span>
-                <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold hidden sm:inline">
-                  PRO
-                </span>
-              </button>
+              </div>
+
+              {/* Name & Card Chip */}
+              <div 
+                onClick={() => setCurrentView(currentView === 'student' ? 'home' : 'student')}
+                className="cursor-pointer min-w-0 max-w-[85px] sm:max-w-[160px] leading-tight"
+                title={isAr ? 'انقر لفتح فضاء الطالب والبطاقة' : 'Voir ma carte'}
+              >
+                <div className="text-[11px] sm:text-xs font-bold text-white truncate">
+                  {userLoyalty?.customCardName || user.displayName || user.email?.split('@')[0]}
+                </div>
+
+                {/* Card Status Chip */}
+                {userLoyalty?.hasActiveCard ? (
+                  <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-emerald-400 font-bold truncate">
+                    <ShieldCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-emerald-400 shrink-0" />
+                    <span className="truncate">
+                      {userLoyalty.tier === 'STUDENT' ? (isAr ? 'طالب 🎓' : 'Étudiant') : `${userLoyalty.tier}`}
+                    </span>
+                  </div>
+                ) : userLoyalty?.cardStatus === 'pending' ? (
+                  <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-amber-400 font-bold truncate">
+                    <CreditCard className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
+                    <span className="truncate">{isAr ? 'مراجعة ⏳' : 'Attente ⏳'}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-[9px] sm:text-[10px] text-amber-300 font-bold truncate hover:underline">
+                    <CreditCard className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
+                    <span className="truncate">{isAr ? 'اطلب بطاقتك' : 'Carte'}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Logout Button */}
               <button
-                onClick={() => {
-                  logout();
-                  setCurrentView('home');
+                type="button"
+                onClick={async () => {
+                  if (window.confirm(isAr ? 'هل أنت متأكد من تسجيل الخروج؟' : 'Confirmer la déconnexion ?')) {
+                    await logout();
+                    setCurrentView('home');
+                  }
                 }}
-                className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-rose-400 hover:border-rose-900 transition-colors"
-                title="تسجيل الخروج"
+                className="p-1 sm:p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                title={isAr ? 'تسجيل الخروج' : 'Déconnexion'}
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
-            <button
-              onClick={onOpenAuth}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-white text-slate-950 hover:bg-slate-200 transition-all shadow-md active:scale-95"
-            >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-                />
-              </svg>
-              <span>{isAr ? 'دخول Google' : 'Connexion'}</span>
-            </button>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={onOpenAuth}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/15 border border-amber-500/40 text-amber-300 hover:bg-amber-500/25 transition-all cursor-pointer"
+                title={isAr ? 'طلب بطاقتك مجاناً دون شراء دورة' : 'Demander votre carte'}
+              >
+                <CreditCard className="w-3.5 h-3.5 text-amber-400" />
+                <span>{isAr ? 'اطلب بطاقتك مجاناً 💳' : 'Carte Gratuite'}</span>
+              </button>
+              <button
+                onClick={onOpenAuth}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-slate-950 hover:bg-slate-200 transition-all shadow-md active:scale-95 cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5 text-slate-950" />
+                <span>{isAr ? 'دخول / حساب' : 'Connexion'}</span>
+              </button>
+            </div>
           )}
 
           {/* Fast Registration Trigger */}
           <button
             onClick={onOpenCartOrEnroll}
-            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 font-black text-xs sm:text-sm shadow-md shadow-amber-500/25 hover:from-amber-400 hover:to-amber-300 transition-all active:scale-95"
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/20 hover:scale-105 transition-all active:scale-95 cursor-pointer shrink-0"
           >
-            <ShoppingCart className="w-4 h-4" />
-            <span className="hidden sm:inline">{isAr ? 'التسجيل في دورة' : 'S’inscrire'}</span>
+            <ShoppingCart className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{isAr ? 'طلب دورة' : 'Commander'}</span>
             {selectedCourseIds.length > 0 && (
-              <span className="flex items-center justify-center w-5 h-5 rounded-full bg-slate-950 text-amber-400 text-xs font-extrabold ml-0.5">
+              <span className="flex items-center justify-center w-4 h-4 rounded-full bg-slate-950 text-amber-400 text-[10px] font-extrabold ml-0.5">
                 {selectedCourseIds.length}
               </span>
             )}
@@ -335,8 +295,10 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Mobile menu trigger */}
           <button
+            type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300"
+            className="md:hidden p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 shrink-0 cursor-pointer"
+            aria-label="Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
