@@ -68,6 +68,7 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const [isGiftUnlocked, setIsGiftUnlocked] = useState(false);
 
   const [userAvatar, setUserAvatar] = useState<string | null>(() => getUserAvatar(user?.uid));
+  const [avatarError, setAvatarError] = useState<string | null>(null);
   const avatarInputRef = React.useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -78,13 +79,14 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    setAvatarError(null);
     if (!file || !user) return;
     if (!file.type.startsWith('image/')) {
-      alert(isAr ? 'يرجى اختيار ملف صورة صالح (JPG, PNG)' : 'Veuillez choisir une image');
+      setAvatarError(isAr ? 'يرجى اختيار ملف صورة صالح (JPG, PNG)' : 'Veuillez choisir une image');
       return;
     }
     if (file.size > 4 * 1024 * 1024) {
-      alert(isAr ? 'حجم الصورة كبير، اختر صورة أقل من 4 ميغابايت' : 'Image trop volumineuse (max 4Mo)');
+      setAvatarError(isAr ? 'حجم الصورة كبير، اختر صورة أقل من 4 ميغابايت' : 'Image trop volumineuse (max 4Mo)');
       return;
     }
     const reader = new FileReader();
@@ -146,16 +148,22 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
     if (!user?.email) return;
     try {
       const q = query(collection(db, 'card_requests'), where('email', '==', user.email.toLowerCase()));
-      const unsub = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const docItem = snapshot.docs[0];
-          const parsed = { id: docItem.id, ...(docItem.data() as MemberCardRequest) };
-          setUserCardRequest(parsed);
-          try {
-            localStorage.setItem(`gc58_card_request_${user.email!.toLowerCase()}`, JSON.stringify(parsed));
-          } catch {}
+      const unsub = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const docItem = snapshot.docs[0];
+            const parsed = { id: docItem.id, ...(docItem.data() as MemberCardRequest) };
+            setUserCardRequest(parsed);
+            try {
+              localStorage.setItem(`gc58_card_request_${user.email!.toLowerCase()}`, JSON.stringify(parsed));
+            } catch {}
+          }
+        },
+        (err) => {
+          console.warn('Card request listener info:', err);
         }
-      });
+      );
       return () => unsub();
     } catch (err) {
       console.warn('Card request listener:', err);
@@ -344,10 +352,9 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </button>
           
           <button
+            type="button"
             onClick={async () => {
-              if (window.confirm(isAr ? 'هل أنت متأكد من رغبتك في تسجيل الخروج من حسابك؟' : 'Voulez-vous vraiment vous déconnecter ?')) {
-                await logout();
-              }
+              await logout();
             }}
             className="px-4 py-2.5 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 text-rose-400 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer"
             title={isAr ? 'تسجيل الخروج من الحساب' : 'Déconnexion'}
@@ -357,6 +364,13 @@ export const StudentDashboard: React.FC<StudentDashboardProps> = ({
           </button>
         </div>
       </div>
+
+      {avatarError && (
+        <div className="p-3 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{avatarError}</span>
+        </div>
+      )}
 
       {/* Official GC58 PRO / SILVER / GOLDEN Loyalty Membership Card */}
       <LoyaltyCardPro

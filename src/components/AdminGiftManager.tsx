@@ -81,9 +81,10 @@ export const AdminGiftManager: React.FC<AdminGiftManagerProps> = ({
     if (!bulkInput.trim()) return;
     const newEpisodes = parseBulkDriveLinks(bulkInput, formData.episodes.length);
     if (newEpisodes.length === 0) {
-      alert(isAr ? 'لم يتم العثور على روابط صالحة في النص المدخل!' : 'Aucun lien valide trouvé.');
+      setErrorMsg(isAr ? 'لم يتم العثور على روابط صالحة في النص المدخل!' : 'Aucun lien valide trouvé.');
       return;
     }
+    setErrorMsg('');
     setFormData((prev) => ({
       ...prev,
       episodes: [...prev.episodes, ...newEpisodes],
@@ -93,7 +94,6 @@ export const AdminGiftManager: React.FC<AdminGiftManagerProps> = ({
   };
 
   const handleDeleteEpisode = (id: string) => {
-    if (!window.confirm(isAr ? 'هل أنت متأكد من حذف هذه الحلقة؟' : 'Supprimer cet épisode ?')) return;
     const updated = formData.episodes
       .filter((ep) => ep.id !== id)
       .map((ep, idx) => ({ ...ep, order: idx + 1 }));

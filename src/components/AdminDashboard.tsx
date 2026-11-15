@@ -241,9 +241,6 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const deleteOrder = async (orderId: string) => {
-    if (!window.confirm(isAr ? 'هل أنت متأكد من حذف هذا الطلب نهائياً من السجل؟' : 'Supprimer définitivement cette commande ?')) {
-      return;
-    }
     try {
       await deleteDoc(doc(db, 'registrations', orderId));
       showNotification(isAr ? 'تم حذف الطلب بنجاح' : 'Commande supprimée avec succès');
@@ -256,12 +253,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const deletePaidOrders = async () => {
     const paidOrders = orders.filter((o) => o.status === 'paye');
     if (paidOrders.length === 0) {
-      alert(isAr ? 'لا توجد طلبات مسددة (Payé) في السجل حالياً لحذفها' : 'Aucune commande payée à supprimer');
-      return;
-    }
-    if (!window.confirm(isAr 
-      ? `هل أنت متأكد من حذف وإفراغ جميع الطلبات التي تم تسديدها وشراؤها (${paidOrders.length} طلب) لتنظيف السجل؟` 
-      : `Supprimer et archiver toutes les commandes payées (${paidOrders.length}) ?`)) {
+      showNotification(isAr ? 'لا توجد طلبات مسددة (Payé) في السجل حالياً لحذفها' : 'Aucune commande payée à supprimer');
       return;
     }
     try {
@@ -279,10 +271,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const deleteCancelledOrders = async () => {
     const cancelled = orders.filter((o) => o.status === 'annule');
     if (cancelled.length === 0) {
-      alert(isAr ? 'لا توجد طلبات ملغاة لحذفها' : 'Aucune commande annulée');
-      return;
-    }
-    if (!window.confirm(isAr ? `حذف ${cancelled.length} طلب ملغى نهائياً؟` : `Supprimer ${cancelled.length} commandes annulées ?`)) {
+      showNotification(isAr ? 'لا توجد طلبات ملغاة لحذفها' : 'Aucune commande annulée');
       return;
     }
     try {

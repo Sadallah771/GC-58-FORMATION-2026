@@ -55,6 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isAr = language === 'ar';
 
   const [userAvatar, setUserAvatar] = React.useState<string | null>(() => getUserAvatar(user?.uid));
+  const [avatarNotice, setAvatarNotice] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
 
   React.useEffect(() => {
@@ -67,11 +68,13 @@ export const Navbar: React.FC<NavbarProps> = ({
     const file = e.target.files?.[0];
     if (!file || !user) return;
     if (!file.type.startsWith('image/')) {
-      alert(isAr ? 'يرجى اختيار ملف صورة صالح (JPG, PNG)' : 'Veuillez choisir une image');
+      setAvatarNotice(isAr ? 'يرجى اختيار ملف صورة صالح (JPG, PNG)' : 'Veuillez choisir une image');
+      setTimeout(() => setAvatarNotice(null), 3500);
       return;
     }
     if (file.size > 4 * 1024 * 1024) {
-      alert(isAr ? 'حجم الصورة كبير، اختر صورة أقل من 4 ميغابايت' : 'Image trop volumineuse (max 4Mo)');
+      setAvatarNotice(isAr ? 'حجم الصورة كبير، اختر صورة أقل من 4 ميغابايت' : 'Image trop volumineuse (max 4Mo)');
+      setTimeout(() => setAvatarNotice(null), 3500);
       return;
     }
     const reader = new FileReader();
@@ -79,6 +82,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       const dataUrl = reader.result as string;
       saveUserAvatar(user.uid, dataUrl);
       setUserAvatar(dataUrl);
+      setAvatarNotice(null);
     };
     reader.readAsDataURL(file);
   };
@@ -248,16 +252,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={async () => {
-                  if (window.confirm(isAr ? 'هل أنت متأكد من تسجيل الخروج؟' : 'Confirmer la déconnexion ?')) {
-                    await logout();
-                    setCurrentView('home');
-                  }
+                  await logout();
+                  setCurrentView('home');
+                  setMobileMenuOpen(false);
                 }}
                 className="p-1 sm:p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
                 title={isAr ? 'تسجيل الخروج' : 'Déconnexion'}
               >
                 <LogOut className="w-3.5 h-3.5" />
               </button>
+              {avatarNotice && (
+                <div className="fixed top-20 left-4 z-50 px-3 py-2 rounded-xl bg-rose-950 border border-rose-500/40 text-rose-200 text-xs font-bold shadow-xl">
+                  {avatarNotice}
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center gap-1.5 sm:gap-2">

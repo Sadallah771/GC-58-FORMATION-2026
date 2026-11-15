@@ -60,17 +60,24 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
   const [cardFilter, setCardFilter] = useState<'all' | 'pending' | 'approved'>('pending');
   const [viewingCardImage, setViewingCardImage] = useState<{ url: string; studentName: string } | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
-      const unsub = onSnapshot(collection(db, 'card_requests'), (snapshot) => {
-        const loaded: MemberCardRequest[] = [];
-        snapshot.forEach((d) => {
-          loaded.push({ id: d.id, ...(d.data() as MemberCardRequest) });
-        });
-        loaded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setCardRequests(loaded);
-      });
+      const unsub = onSnapshot(
+        collection(db, 'card_requests'),
+        (snapshot) => {
+          const loaded: MemberCardRequest[] = [];
+          snapshot.forEach((d) => {
+            loaded.push({ id: d.id, ...(d.data() as MemberCardRequest) });
+          });
+          loaded.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          setCardRequests(loaded);
+        },
+        (err) => {
+          console.warn('Card requests listener info:', err);
+        }
+      );
       return () => unsub();
     } catch (e) {
       console.warn('Card requests listener:', e);
@@ -83,35 +90,36 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
         status: 'approved',
         approvedAt: new Date().toISOString(),
       });
+      setActionError(null);
       setActionSuccess(isAr ? `تمت المصادقة وتفعيل بطاقة (${studentName}) بنجاح! ✅` : `Carte validée avec succès pour ${studentName} !`);
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err) {
       console.error('Approve error:', err);
-      alert(isAr ? 'حدث خطأ أثناء المصادقة' : 'Erreur de validation');
+      setActionError(isAr ? 'حدث خطأ أثناء المصادقة' : 'Erreur de validation');
+      setTimeout(() => setActionError(null), 4000);
     }
   };
 
   const handleRejectCard = async (reqId: string, studentName: string) => {
-    if (!window.confirm(isAr ? `هل أنت متأكد من رفض طلب بطاقة ${studentName}؟` : `Rejeter la demande de ${studentName} ?`)) {
-      return;
-    }
     try {
       await updateDoc(doc(db, 'card_requests', reqId), {
         status: 'rejected',
       });
+      setActionError(null);
       setActionSuccess(isAr ? `تم رفض طلب بطاقة (${studentName})` : `Demande rejetée`);
       setTimeout(() => setActionSuccess(null), 4000);
     } catch (err) {
       console.error('Reject error:', err);
+      setActionError(isAr ? 'تعذر رفض الطلب حالياً' : 'Erreur lors du rejet');
+      setTimeout(() => setActionError(null), 4000);
     }
   };
 
   const handleDeleteCardRequest = async (reqId: string) => {
-    if (!window.confirm(isAr ? 'حذف هذا الطلب نهائياً من السجل؟' : 'Supprimer définitivement cette demande ?')) {
-      return;
-    }
     try {
       await deleteDoc(doc(db, 'card_requests', reqId));
+      setActionSuccess(isAr ? 'تم حذف الطلب من السجل' : 'Demande supprimée');
+      setTimeout(() => setActionSuccess(null), 3000);
     } catch (err) {
       console.error('Delete error:', err);
     }
@@ -181,7 +189,8 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
   // Export Members List to Excel
   const exportMembersToExcel = () => {
     if (filteredClients.length === 0) {
-      alert(isAr ? 'لا يوجد أعضاء في القائمة الحالية لتصديرهم' : 'Aucun membre à exporter');
+      setActionError(isAr ? 'لا يوجد أعضاء في القائمة الحالية لتصديرهم' : 'Aucun membre à exporter');
+      setTimeout(() => setActionError(null), 3500);
       return;
     }
 
@@ -277,6 +286,12 @@ export const AdminMembersManager: React.FC<AdminMembersManagerProps> = ({
         <div className="p-4 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm font-bold flex items-center gap-2 animate-in fade-in">
           <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-400" />
           <span>{actionSuccess}</span>
+        </div>
+      )}
+      {actionError && (
+        <div className="p-4 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs sm:text-sm font-bold flex items-center gap-2 animate-in fade-in">
+          <AlertTriangle className="w-5 h-5 shrink-0 text-rose-400" />
+          <span>{actionError}</span>
         </div>
       )}
 

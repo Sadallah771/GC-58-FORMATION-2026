@@ -125,15 +125,21 @@ function AppContent() {
     }
 
     // Real-time listener on user points
-    const unsubPoints = onSnapshot(doc(db, 'user_points', emailToUse), (snap) => {
-      if (snap.exists()) {
-        const pts = snap.data().points || 0;
-        setUserPoints(pts);
-        try {
-          localStorage.setItem(`gc58_points_${emailToUse}`, pts.toString());
-        } catch {}
+    const unsubPoints = onSnapshot(
+      doc(db, 'user_points', emailToUse),
+      (snap) => {
+        if (snap.exists()) {
+          const pts = snap.data().points || 0;
+          setUserPoints(pts);
+          try {
+            localStorage.setItem(`gc58_points_${emailToUse}`, pts.toString());
+          } catch {}
+        }
+      },
+      (err) => {
+        console.warn('User points listener info:', err);
       }
-    });
+    );
 
     return () => unsubPoints();
   }, [user]);
@@ -148,22 +154,28 @@ function AppContent() {
 
     try {
       const q = query(collection(db, 'card_requests'), where('email', '==', emailToUse));
-      const unsub = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          const docItem = snapshot.docs[0];
-          const parsed = { id: docItem.id, ...(docItem.data() as MemberCardRequest) };
-          setUserCardRequest(parsed);
-          try {
-            localStorage.setItem(`gc58_card_request_${emailToUse}`, JSON.stringify(parsed));
-          } catch {}
-        } else {
-          // If no approved/pending request exists in DB, clean local cache so user starts clean
-          setUserCardRequest(null);
-          try {
-            localStorage.removeItem(`gc58_card_request_${emailToUse}`);
-          } catch {}
+      const unsub = onSnapshot(
+        q,
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const docItem = snapshot.docs[0];
+            const parsed = { id: docItem.id, ...(docItem.data() as MemberCardRequest) };
+            setUserCardRequest(parsed);
+            try {
+              localStorage.setItem(`gc58_card_request_${emailToUse}`, JSON.stringify(parsed));
+            } catch {}
+          } else {
+            // If no approved/pending request exists in DB, clean local cache so user starts clean
+            setUserCardRequest(null);
+            try {
+              localStorage.removeItem(`gc58_card_request_${emailToUse}`);
+            } catch {}
+          }
+        },
+        (err) => {
+          console.warn('Card request listener info:', err);
         }
-      });
+      );
       return () => unsub();
     } catch (err) {
       console.warn('Card request listener error:', err);
@@ -199,7 +211,11 @@ function AppContent() {
   }, [user]);
 
   const userLoyalty = React.useMemo(() => {
-    const emailToUse = user?.email?.toLowerCase().trim() || localStorage.getItem('gc58_student_email')?.toLowerCase().trim() || null;
+    let fallbackEmail: string | null = null;
+    try {
+      fallbackEmail = typeof window !== 'undefined' ? window.localStorage.getItem('gc58_student_email')?.toLowerCase().trim() || null : null;
+    } catch {}
+    const emailToUse = user?.email?.toLowerCase().trim() || fallbackEmail;
     const assignedTier = userCardRequest?.tierRequested;
     const isApproved = userCardRequest?.status === 'approved';
     const customName = userCardRequest?.customCardName || userCardRequest?.fullName;
@@ -263,22 +279,28 @@ function AppContent() {
   // Load custom site courses & settings from Firestore if available
   useEffect(() => {
     try {
-      const unsub = onSnapshot(collection(db, 'site_courses'), (snapshot) => {
-        if (!snapshot.empty) {
-          const overrides: Record<string, Partial<Course>> = {};
-          snapshot.forEach((doc) => {
-            overrides[doc.id] = doc.data() as Partial<Course>;
-          });
-          setCourses((prevCourses) =>
-            prevCourses.map((c) => {
-              if (overrides[c.id]) {
-                return { ...c, ...overrides[c.id] };
-              }
-              return c;
-            })
-          );
+      const unsub = onSnapshot(
+        collection(db, 'site_courses'),
+        (snapshot) => {
+          if (!snapshot.empty) {
+            const overrides: Record<string, Partial<Course>> = {};
+            snapshot.forEach((doc) => {
+              overrides[doc.id] = doc.data() as Partial<Course>;
+            });
+            setCourses((prevCourses) =>
+              prevCourses.map((c) => {
+                if (overrides[c.id]) {
+                  return { ...c, ...overrides[c.id] };
+                }
+                return c;
+              })
+            );
+          }
+        },
+        (err) => {
+          console.warn('Site courses listener info:', err);
         }
-      });
+      );
 
       // Load general settings
       getDoc(doc(db, 'site_settings', 'general')).then((snap) => {
@@ -288,16 +310,22 @@ function AppContent() {
       }).catch(() => {});
 
       // Load gift course settings
-      const unsubGift = onSnapshot(doc(db, 'site_settings', 'gift_course'), (snap) => {
-        if (snap.exists()) {
-          const data = snap.data() as Partial<GiftCourseSettings>;
-          setGiftCourse((prev) => ({
-            ...prev,
-            ...data,
-            episodes: Array.isArray(data.episodes) && data.episodes.length > 0 ? data.episodes : prev.episodes,
-          }));
+      const unsubGift = onSnapshot(
+        doc(db, 'site_settings', 'gift_course'),
+        (snap) => {
+          if (snap.exists()) {
+            const data = snap.data() as Partial<GiftCourseSettings>;
+            setGiftCourse((prev) => ({
+              ...prev,
+              ...data,
+              episodes: Array.isArray(data.episodes) && data.episodes.length > 0 ? data.episodes : prev.episodes,
+            }));
+          }
+        },
+        (err) => {
+          console.warn('Gift course listener info:', err);
         }
-      });
+      );
 
       return () => {
         unsub();

@@ -55,7 +55,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ language
     let unsubscribe = () => {};
     try {
       const q = query(
-        collection(db, 'site_notifications'),
+        collection(db, 'notifications'),
         orderBy('createdAt', 'desc'),
         limit(25)
       );

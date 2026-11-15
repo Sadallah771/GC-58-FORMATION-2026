@@ -189,6 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setCustomUser(null);
     try {
       localStorage.removeItem(STORAGE_ADMIN_KEY);
+      localStorage.removeItem('gc58_student_email');
     } catch {}
     setSimulateAdminMode(false);
   };

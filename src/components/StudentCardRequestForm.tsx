@@ -52,6 +52,7 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
   const [studentCardImage, setStudentCardImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState(false);
 
@@ -112,9 +113,10 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
     e.preventDefault();
     setPhoneError(null);
     setImageError(null);
+    setFormError(null);
 
     if (!userEmail) {
-      alert(isAr ? 'يرجى تسجيل الدخول أولاً بحسابك لطلب البطاقة' : 'Connexion requise');
+      setFormError(isAr ? 'يرجى تسجيل الدخول أولاً بحسابك لطلب البطاقة' : 'Connexion requise');
       if (onOpenAuth) onOpenAuth();
       return;
     }
@@ -126,7 +128,7 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
     }
 
     if (!fullName.trim()) {
-      alert(isAr ? 'يرجى إدخال اسمك الحقيقي الكامل كما يظهر في الوثائق الرسمية' : 'Nom complet requis.');
+      setFormError(isAr ? 'يرجى إدخال اسمك الحقيقي الكامل كما يظهر في الوثائق الرسمية' : 'Nom complet requis.');
       return;
     }
 
@@ -160,7 +162,7 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
       onRequestSubmitted(savedWithId);
     } catch (err) {
       console.error('Error submitting card request:', err);
-      alert(isAr ? 'حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مجدداً.' : 'Erreur lors de l’envoi de la demande.');
+      setFormError(isAr ? 'حدث خطأ أثناء إرسال الطلب، يرجى المحاولة مجدداً.' : 'Erreur lors de l’envoi de la demande.');
     } finally {
       setSubmitting(false);
     }
@@ -168,13 +170,14 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
 
   const handleUpdateCardDetails = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
     const cleanPhone = editPhone.replace(/\s+/g, '');
     if (!validatePhone(cleanPhone)) {
-      alert(isAr ? 'يجب إدخال 10 أرقام صحيحة تبدأ بـ 0' : 'Numéro invalide');
+      setFormError(isAr ? 'يجب إدخال 10 أرقام صحيحة تبدأ بـ 0' : 'Numéro invalide');
       return;
     }
     if (!editName.trim()) {
-      alert(isAr ? 'يرجى كتابة الاسم الذي تريده على البطاقة' : 'Nom requis');
+      setFormError(isAr ? 'يرجى كتابة الاسم الذي تريده على البطاقة' : 'Nom requis');
       return;
     }
 
@@ -208,7 +211,7 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
       setTimeout(() => setSaveEditSuccess(false), 3000);
     } catch (err) {
       console.error('Error updating card details:', err);
-      alert(isAr ? 'حدث خطأ أثناء حفظ التعديلات' : 'Erreur de modification');
+      setFormError(isAr ? 'حدث خطأ أثناء حفظ التعديلات' : 'Erreur de modification');
     }
   };
 
@@ -367,6 +370,12 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
               <span>{isAr ? 'تم تحديث الاسم ورقم الهاتف على بطاقتك بنجاح!' : 'Coordonnées mises à jour avec succès !'}</span>
             </div>
           )}
+          {formError && (
+            <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -469,6 +478,12 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
               <span>{isAr ? 'تم تحديث البيانات بنجاح!' : 'Mise à jour réussie !'}</span>
             </div>
           )}
+          {formError && (
+            <div className="p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -485,6 +500,13 @@ export const StudentCardRequestForm: React.FC<StudentCardRequestFormProps> = ({
           {isAr ? 'اختر بطاقتك وسيقوم الأدمين بمصادقتها دون شراء دورة' : 'Choisissez votre carte sans achat préalable'}
         </h3>
       </div>
+
+      {formError && (
+        <div className="p-3 rounded-2xl bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          <span>{formError}</span>
+        </div>
+      )}
 
       {successMsg && (
         <div className="p-3 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">

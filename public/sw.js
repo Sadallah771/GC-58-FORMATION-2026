@@ -1,5 +1,5 @@
 // GC58 FORMATIONS - Progressive Web App Service Worker
-const CACHE_NAME = 'gc58-cache-v1';
+const CACHE_NAME = 'gc58-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
@@ -41,12 +41,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Let Firestore / Firebase and Google APIs bypass cache
+  // Bypass cross-origin requests, Vite dev modules, and API routes
   if (
-    url.hostname.includes('firestore.googleapis.com') ||
-    url.hostname.includes('firebaseio.com') ||
-    url.hostname.includes('identitytoolkit') ||
-    url.hostname.includes('google')
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith('/@') ||
+    url.pathname.startsWith('/src/') ||
+    url.pathname.startsWith('/node_modules/') ||
+    url.pathname.startsWith('/api/')
   ) {
     return;
   }
@@ -68,8 +69,9 @@ self.addEventListener('fetch', (event) => {
         return caches.match(event.request).then((cachedResponse) => {
           if (cachedResponse) return cachedResponse;
           if (event.request.mode === 'navigate') {
-            return caches.match('/');
+            return caches.match('/').then((homeResp) => homeResp || Response.error());
           }
+          return Response.error();
         });
       })
   );

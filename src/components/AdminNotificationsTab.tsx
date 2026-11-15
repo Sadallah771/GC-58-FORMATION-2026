@@ -50,6 +50,7 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -65,7 +66,7 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
     let unsubscribe = () => {};
     try {
       const q = query(
-        collection(db, 'site_notifications'),
+        collection(db, 'notifications'),
         orderBy('createdAt', 'desc'),
         limit(50)
       );
@@ -179,7 +180,7 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
     };
 
     try {
-      await addDoc(collection(db, 'site_notifications'), newNotif);
+      await addDoc(collection(db, 'notifications'), newNotif);
 
       // Play local audio chime & send test desktop notification to verify
       sendDesktopNotification(newNotif.title, newNotif.message, newNotif.link);
@@ -197,9 +198,11 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
       setActionLabel('');
       setIsImportant(false);
       setSelectedCourseId('');
+      setErrorMsg(null);
     } catch (err) {
       console.error('Error dispatching notification:', err);
-      alert(isAr ? 'حدث خطأ أثناء إطلاق الإشعار' : 'Erreur lors de l’envoi');
+      setErrorMsg(isAr ? 'حدث خطأ أثناء إطلاق الإشعار' : 'Erreur lors de l’envoi');
+      setTimeout(() => setErrorMsg(null), 4000);
     } finally {
       setSubmitting(false);
     }
@@ -208,13 +211,11 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
   // Delete Notification
   const handleDeleteNotification = async (id?: string) => {
     if (!id) return;
-    if (window.confirm(isAr ? 'هل أنت متأكد من حذف هذا الإشعار من سجل المنصة؟' : 'Supprimer cette notification ?')) {
-      try {
-        await deleteDoc(doc(db, 'site_notifications', id));
-        showNotification(isAr ? 'تم حذف الإشعار' : 'Notification supprimée');
-      } catch (err) {
-        console.warn(err);
-      }
+    try {
+      await deleteDoc(doc(db, 'notifications', id));
+      showNotification(isAr ? 'تم حذف الإشعار' : 'Notification supprimée');
+    } catch (err) {
+      console.warn(err);
     }
   };
 
@@ -257,6 +258,12 @@ export const AdminNotificationsTab: React.FC<AdminNotificationsTabProps> = ({
         <div className="p-4 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm font-bold flex items-center gap-2 animate-in fade-in">
           <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
           <span>{successMsg}</span>
+        </div>
+      )}
+      {errorMsg && (
+        <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs sm:text-sm font-bold flex items-center gap-2 animate-in fade-in">
+          <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+          <span>{errorMsg}</span>
         </div>
       )}
 
