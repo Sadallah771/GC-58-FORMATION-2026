@@ -34,7 +34,7 @@ export interface EngineerPackTier {
 export const ENGINEER_PACKS: EngineerPackTier[] = [
   {
     count: 2,
-    price: 7400,
+    price: 5900,
     titleAr: 'حقيبة المهندس (دورتين)',
     titleFr: 'Pack Ingénieur (2 Cours)',
     shortLabelAr: 'دورتين',
@@ -42,7 +42,7 @@ export const ENGINEER_PACKS: EngineerPackTier[] = [
   },
   {
     count: 3,
-    price: 9900,
+    price: 8950,
     titleAr: 'حقيبة المهندس (3 دورات)',
     titleFr: 'Pack Ingénieur (3 Cours)',
     shortLabelAr: '3 دورات',
@@ -50,7 +50,7 @@ export const ENGINEER_PACKS: EngineerPackTier[] = [
   },
   {
     count: 5,
-    price: 14000,
+    price: 13500,
     titleAr: 'حقيبة المهندس (5 دورات)',
     titleFr: 'Pack Ingénieur (5 Formations)',
     shortLabelAr: '5 دورات',
@@ -58,7 +58,7 @@ export const ENGINEER_PACKS: EngineerPackTier[] = [
   },
   {
     count: 10,
-    price: 30000,
+    price: 29300,
     titleAr: 'حقيبة المهندس (10 دورات)',
     titleFr: 'Pack Ingénieur (10 Formations)',
     shortLabelAr: '10 دورات',
@@ -66,7 +66,7 @@ export const ENGINEER_PACKS: EngineerPackTier[] = [
   },
   {
     count: 14,
-    price: 38000,
+    price: 41500,
     titleAr: 'حقيبة المهندس الشاملة (14 دورة)',
     titleFr: 'Pack Intégral (14 Formations)',
     shortLabelAr: '14 دورة',

@@ -315,7 +315,7 @@ export const HomePortalGateways: React.FC<HomePortalGatewaysProps> = ({
         {expandedCard === 'pack' && (
           <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-1 animate-in fade-in duration-200">
             <p>• {isAr ? 'يمكنك اختيار أي دورات تفضلها من الخرسانة، الهياكل المعدنية أو الطرقات داخل الحقيبة.' : 'Composez votre pack librement parmi tout le catalogue.'}</p>
-            <p>• {isAr ? 'حقيبة 14 دورة (38,000 دج) تمنحك المستوى الذهبي VIP مع كامل الملفات والشيتات.' : 'Le pack 14 cours débloque le statut Golden VIP.'}</p>
+            <p>• {isAr ? 'حقيبة 14 دورة (41,500 دج) تمنحك المستوى الذهبي VIP مع كامل الملفات والشيتات.' : 'Le pack 14 cours débloque le statut Golden VIP.'}</p>
           </div>
         )}
 
