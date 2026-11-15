@@ -23,7 +23,7 @@ export interface TierDetails {
 }
 
 export interface EngineerPackTier {
-  count: 2 | 3 | 5 | 10 | 14;
+  count: 3 | 5 | 10 | 14;
   price: number;
   titleAr: string;
   titleFr: string;
@@ -32,14 +32,6 @@ export interface EngineerPackTier {
 }
 
 export const ENGINEER_PACKS: EngineerPackTier[] = [
-  {
-    count: 2,
-    price: 5900,
-    titleAr: 'حقيبة المهندس (دورتين)',
-    titleFr: 'Pack Ingénieur (2 Cours)',
-    shortLabelAr: 'دورتين',
-    shortLabelFr: '2 Cours',
-  },
   {
     count: 3,
     price: 8950,

@@ -319,7 +319,7 @@ export const HomePortalGateways: React.FC<HomePortalGatewaysProps> = ({
           </div>
         )}
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {ENGINEER_PACKS.map((pack) => (
             <button
               key={pack.count}
